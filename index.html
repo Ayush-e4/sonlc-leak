@@ -3,34 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonic Link | Bulletproof</title>
+    <title>Sonic Link | Type-Safe</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/gh/ggerganov/ggwave/bindings/javascript/ggwave.js"></script>
 </head>
-<body class="bg-[#0b0f1a] text-slate-200 min-h-screen p-4 flex flex-col items-center">
+<body class="bg-[#0b0f1a] text-slate-200 min-h-screen p-4 flex flex-col items-center justify-center">
 
-    <div class="max-w-md w-full mt-10 space-y-6">
+    <div class="max-w-md w-full space-y-6">
         <div class="text-center">
-            <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">SONIC LINK</h1>
-            <p id="engineStatus" class="text-[10px] font-mono text-rose-500 mt-2 tracking-widest uppercase font-bold">Engine Offline</p>
+            <h1 class="text-4xl font-black text-cyan-400 tracking-tighter">SONIC LINK</h1>
+            <p id="engineStatus" class="text-[10px] font-mono text-rose-500 mt-2 uppercase font-bold tracking-widest">Engine Offline</p>
         </div>
 
-        <div id="debugLog" class="bg-black/60 border border-slate-800 rounded-xl p-3 h-24 overflow-y-auto text-[10px] font-mono text-slate-500">
-            <div>[System] Initializing...</div>
+        <div id="debugLog" class="bg-black/60 border border-slate-800 rounded-xl p-3 h-20 overflow-y-auto text-[10px] font-mono text-slate-500">
+            <div>[System] Waiting for WASM...</div>
         </div>
 
         <div class="space-y-4">
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                <input id="txData" type="text" placeholder="Type message..." 
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl">
+                <input id="txData" type="text" value="Hello" placeholder="Enter message..." 
                     class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm mb-4 outline-none focus:border-cyan-500 transition-colors">
-                <button onclick="onSend()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl font-bold transition-all active:scale-95">
+                <button id="sendBtn" onclick="onSend()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl font-bold transition-all disabled:opacity-50">
                     Broadcast Silently
                 </button>
             </div>
 
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                <div id="rxOutput" class="bg-black/40 rounded-lg p-4 h-20 mb-4 text-emerald-400 font-mono text-sm overflow-hidden flex items-center justify-center italic">
-                    Waiting...
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl">
+                <div id="rxOutput" class="bg-black/40 rounded-lg p-4 h-20 mb-4 text-emerald-400 font-mono text-sm flex items-center justify-center italic border border-slate-800">
+                    Receiver Offline
                 </div>
                 <button id="rxBtn" onclick="toggleReceiver()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold transition-all">
                     Start Listening
@@ -52,7 +52,6 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // CRITICAL FIX: This tells the JS exactly where to find the .wasm "brain" file
         const factoryConfig = {
             locateFile: (path) => {
                 if (path.endsWith('.wasm')) {
@@ -62,20 +61,13 @@
             }
         };
 
-        // Initialize the engine with the custom config
-        try {
-            log("Loading WebAssembly brain...");
-            ggwave_factory(factoryConfig).then(obj => {
-                ggwave = obj;
-                document.getElementById('engineStatus').innerText = "📡 Engine Online";
-                document.getElementById('engineStatus').classList.replace('text-rose-500', 'text-emerald-500');
-                log("Success: WASM Loaded.");
-            }).catch(e => {
-                log("WASM Load Failed: " + e.message);
-            });
-        } catch (e) {
-            log("Factory Error: " + e.message);
-        }
+        // Initialize GGWave
+        ggwave_factory(factoryConfig).then(obj => {
+            ggwave = obj;
+            document.getElementById('engineStatus').innerText = "📡 Engine Online";
+            document.getElementById('engineStatus').classList.replace('text-rose-500', 'text-emerald-500');
+            log("WASM Handshake Complete.");
+        }).catch(e => log("WASM Error: " + e.message));
 
         async function initAudio() {
             if (!audioCtx) {
@@ -85,28 +77,42 @@
         }
 
         async function onSend() {
-            if (!ggwave) return log("Error: Engine not ready");
+            if (!ggwave) return log("Wait for engine...");
             await initAudio();
-            const text = document.getElementById('txData').value;
-            if (!text) return;
-
-            log(`Broadcasting: ${text}`);
             
-            // Fixed call with 4th argument
-            const payload = ggwave.encode(text, 4, 15, false);
+            // FIX 1: Explicitly cast to String and check for emptiness
+            let rawText = document.getElementById('txData').value;
+            let textToSend = String(rawText).trim();
             
-            const buffer = audioCtx.createBuffer(1, payload.length, 48000);
-            buffer.getChannelData(0).set(payload);
+            if (textToSend.length === 0) {
+                log("Error: Input is empty");
+                return;
+            }
 
-            const source = audioCtx.createBufferSource();
-            source.buffer = buffer;
-            source.connect(audioCtx.destination);
-            source.start();
+            try {
+                log(`Encoding: "${textToSend}"`);
+                
+                // FIX 2: Ensure all parameters are the correct type
+                // (string, number, number, boolean)
+                const payload = ggwave.encode(textToSend, 4, 15, false);
+                
+                const buffer = audioCtx.createBuffer(1, payload.length, 48000);
+                buffer.getChannelData(0).set(payload);
+
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                source.start();
+                log("Pulse sent.");
+            } catch (e) {
+                log("Binding Error: " + e.message);
+                console.error(e);
+            }
         }
 
         async function toggleReceiver() {
             if (isListening) return location.reload();
-            if (!ggwave) return log("Error: Engine not ready");
+            if (!ggwave) return log("Wait for engine...");
             await initAudio();
 
             try {
@@ -119,19 +125,22 @@
 
                 processor.onaudioprocess = (e) => {
                     const inputData = e.inputBuffer.getChannelData(0);
+                    // Safe decode call
                     const result = ggwave.decode(inputData);
-                    if (result) {
-                        log("Signal Captured!");
+                    if (result && typeof result === 'string') {
+                        log("Captured Data!");
                         document.getElementById('rxOutput').innerText = result;
+                        document.getElementById('rxOutput').classList.remove('italic');
                     }
                 };
 
                 isListening = true;
                 document.getElementById('rxBtn').innerText = "Stop Listening";
                 document.getElementById('rxBtn').classList.replace('bg-emerald-600', 'bg-red-600');
-                log("Scanning airwaves...");
+                document.getElementById('rxOutput').innerText = "Scanning Air...";
+                log("Mic Active.");
             } catch (err) {
-                log("Mic Access Denied");
+                log("Permission Denied.");
             }
         }
     </script>
