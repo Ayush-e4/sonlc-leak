@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonic Link | The Final Fix</title>
+    <title>Sonic Link | The Real Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/gh/ggerganov/ggwave/bindings/javascript/ggwave.js"></script>
 </head>
@@ -15,13 +15,13 @@
             <p id="engineStatus" class="text-[10px] font-mono text-rose-500 mt-2 uppercase font-bold tracking-widest">Engine Offline</p>
         </div>
 
-        <div id="debugLog" class="bg-black/60 border border-slate-800 rounded-xl p-3 h-24 overflow-y-auto text-[10px] font-mono text-slate-500">
-            <div>[System] Initializing...</div>
+        <div id="debugLog" class="bg-black/60 border border-slate-800 rounded-xl p-3 h-28 overflow-y-auto text-[10px] font-mono text-slate-500">
+            <div>[System] Booting WASM Environment...</div>
         </div>
 
         <div class="space-y-4">
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl">
-                <input id="txData" type="text" value="Hello" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm mb-4 outline-none focus:border-cyan-500 text-white">
+                <input id="txData" type="text" value="Hello Sonic" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm mb-4 outline-none focus:border-cyan-500 text-white">
                 <button onclick="onSend()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl font-bold transition-all active:scale-95">
                     Broadcast Silently
                 </button>
@@ -29,7 +29,7 @@
 
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl">
                 <div id="rxOutput" class="bg-black/40 rounded-lg p-4 h-20 mb-4 text-emerald-400 font-mono text-sm flex items-center justify-center italic border border-slate-800 break-all">
-                    Ready to listen...
+                    Standing by...
                 </div>
                 <button id="rxBtn" onclick="toggleReceiver()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold transition-all active:scale-95">
                     Start Listening
@@ -40,6 +40,7 @@
 
     <script>
         let ggwave = null;
+        let ggwaveInstance = null; // We were missing this!
         let audioCtx = null;
         let isListening = false;
 
@@ -60,42 +61,45 @@
             }
         };
 
-        // Initialize Engine
+        // Initialize Engine & Create Instance
         ggwave_factory(factoryConfig).then(obj => {
             ggwave = obj;
+            
+            // 1. Get default settings from C++
+            let parameters = ggwave.getDefaultParameters();
+            
+            // 2. Lock sample rates to 48kHz to match modern Web Audio
+            parameters.sampleRateInp = 48000;
+            parameters.sampleRateOut = 48000;
+            
+            // 3. Create the DSP Instance! (This returns an integer ID)
+            ggwaveInstance = ggwave.init(parameters);
+
             document.getElementById('engineStatus').innerText = "📡 Engine Online";
             document.getElementById('engineStatus').classList.replace('text-rose-500', 'text-emerald-500');
-            log("WASM Loaded Successfully.");
-        }).catch(e => log("Failed to load engine: " + e.message));
+            log(`WASM Ready. Instance ID: ${ggwaveInstance}`);
+        }).catch(e => log("Init Error: " + e.message));
 
         async function initAudio() {
             if (!audioCtx) {
-                // Force 48kHz sample rate, which is what ggwave expects natively
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 48000});
             }
             if (audioCtx.state === 'suspended') await audioCtx.resume();
         }
 
         async function onSend() {
-            if (!ggwave) return log("Error: Wait for Engine Online");
+            if (!ggwaveInstance) return log("Error: DSP Instance not running");
             await initAudio();
             
-            // 1. Grab the text and ensure it's a standard String, not empty
-            let rawText = document.getElementById('txData').value;
-            let safeString = String(rawText).trim();
+            let safeString = String(document.getElementById('txData').value).trim();
             if (safeString === "") safeString = "Hello";
             
             try {
                 log(`Encoding: "${safeString}"`);
 
-                // 2. THE STRICT CALL: Exactly 4 arguments.
-                // Arg 1: String payload
-                // Arg 2: Protocol ID (4 = Ultrasound)
-                // Arg 3: Volume (10-15 is usually good)
-                // Arg 4: false (use_v6 boolean flag)
-                const payload = ggwave.encode(safeString, 4, 15, false);
+                // THE FIX: Exactly 4 arguments. (Instance ID, String, Protocol, Volume)
+                const payload = ggwave.encode(ggwaveInstance, safeString, 4, 15);
                 
-                // 3. Play the generated audio buffer
                 const buffer = audioCtx.createBuffer(1, payload.length, 48000);
                 buffer.getChannelData(0).set(payload);
 
@@ -103,20 +107,17 @@
                 source.buffer = buffer;
                 source.connect(audioCtx.destination);
                 source.start();
-                log("✅ Pulse sent successfully!");
+                log("✅ Pulse broadcasted!");
                 
             } catch (e) {
                 log("❌ Encode Error: " + e.message);
-                console.error("Full Error:", e);
+                console.error(e);
             }
         }
 
         async function toggleReceiver() {
-            if (isListening) {
-                location.reload(); // Quick reset for demo purposes
-                return;
-            }
-            if (!ggwave) return log("Error: Engine not ready");
+            if (isListening) return location.reload(); 
+            if (!ggwaveInstance) return log("Error: DSP Instance not running");
             await initAudio();
 
             try {
@@ -130,17 +131,13 @@
                 processor.onaudioprocess = (e) => {
                     const inputData = e.inputBuffer.getChannelData(0);
                     
-                    // Decode expects exactly 1 argument (the audio buffer array)
-                    const result = ggwave.decode(inputData);
+                    // THE FIX: Decode also requires the Instance ID
+                    const result = ggwave.decode(ggwaveInstance, inputData);
                     
-                    if (result) {
-                        let finalText = result;
-                        // Some older browsers/versions return a byte array from C++ instead of a string
-                        if (typeof result !== 'string') {
-                            finalText = new TextDecoder().decode(result);
-                        }
+                    if (result && result.length > 0) {
+                        let finalText = typeof result === 'string' ? result : new TextDecoder().decode(result);
                         
-                        log("🎉 SIGNAL DECODED!");
+                        log(`🎉 DECODED: ${finalText}`);
                         document.getElementById('rxOutput').innerText = finalText;
                         document.getElementById('rxOutput').classList.remove('italic');
                     }
@@ -150,7 +147,7 @@
                 document.getElementById('rxBtn').innerText = "Stop Listening";
                 document.getElementById('rxBtn').classList.replace('bg-emerald-600', 'bg-red-600');
                 document.getElementById('rxOutput').innerText = "Scanning Air...";
-                log("Mic Active. Listening for 18kHz pulses.");
+                log("Mic Active. Listening...");
             } catch (err) {
                 log("❌ Mic Access Denied.");
             }
