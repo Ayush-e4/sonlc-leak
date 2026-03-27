@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonic Link | Protocol Fix</title>
+    <title>Sonic Link | The Final Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/gh/ggerganov/ggwave/bindings/javascript/ggwave.js"></script>
 </head>
@@ -16,22 +16,22 @@
         </div>
 
         <div id="debugLog" class="bg-black/60 border border-slate-800 rounded-xl p-3 h-24 overflow-y-auto text-[10px] font-mono text-slate-500">
-            <div>[System] Ready for Handshake.</div>
+            <div>[System] Initializing...</div>
         </div>
 
         <div class="space-y-4">
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl">
-                <input id="txData" type="text" value="Hello" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm mb-4 outline-none focus:border-cyan-500">
-                <button id="sendBtn" onclick="onSend()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl font-bold transition-all disabled:opacity-50">
+                <input id="txData" type="text" value="Hello" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm mb-4 outline-none focus:border-cyan-500 text-white">
+                <button onclick="onSend()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl font-bold transition-all active:scale-95">
                     Broadcast Silently
                 </button>
             </div>
 
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl">
-                <div id="rxOutput" class="bg-black/40 rounded-lg p-4 h-20 mb-4 text-emerald-400 font-mono text-sm flex items-center justify-center italic border border-slate-800">
-                    Waiting for signal...
+                <div id="rxOutput" class="bg-black/40 rounded-lg p-4 h-20 mb-4 text-emerald-400 font-mono text-sm flex items-center justify-center italic border border-slate-800 break-all">
+                    Ready to listen...
                 </div>
-                <button id="rxBtn" onclick="toggleReceiver()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold transition-all">
+                <button id="rxBtn" onclick="toggleReceiver()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold transition-all active:scale-95">
                     Start Listening
                 </button>
             </div>
@@ -66,37 +66,36 @@
             document.getElementById('engineStatus').innerText = "📡 Engine Online";
             document.getElementById('engineStatus').classList.replace('text-rose-500', 'text-emerald-500');
             log("WASM Loaded Successfully.");
-        });
+        }).catch(e => log("Failed to load engine: " + e.message));
 
         async function initAudio() {
             if (!audioCtx) {
+                // Force 48kHz sample rate, which is what ggwave expects natively
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 48000});
             }
             if (audioCtx.state === 'suspended') await audioCtx.resume();
         }
 
         async function onSend() {
-            if (!ggwave) return log("Wait for engine...");
+            if (!ggwave) return log("Error: Wait for Engine Online");
             await initAudio();
             
-            const rawText = document.getElementById('txData').value || "Hello";
+            // 1. Grab the text and ensure it's a standard String, not empty
+            let rawText = document.getElementById('txData').value;
+            let safeString = String(rawText).trim();
+            if (safeString === "") safeString = "Hello";
             
             try {
-                // THE FIX: Use TextEncoder to convert string to Uint8Array
-                // This prevents the "non-string to std::string" binding error
-                const encoder = new TextEncoder();
-                const textBuffer = encoder.encode(String(rawText));
-                
-                log(`Broadcasting: ${rawText}`);
+                log(`Encoding: "${safeString}"`);
 
-                // Try the 4-argument call first, fallback to 3 if needed
-                let payload;
-                try {
-                    payload = ggwave.encode(textBuffer, 4, 15, false);
-                } catch (e) {
-                    payload = ggwave.encode(textBuffer, 4, 15);
-                }
+                // 2. THE STRICT CALL: Exactly 4 arguments.
+                // Arg 1: String payload
+                // Arg 2: Protocol ID (4 = Ultrasound)
+                // Arg 3: Volume (10-15 is usually good)
+                // Arg 4: false (use_v6 boolean flag)
+                const payload = ggwave.encode(safeString, 4, 15, false);
                 
+                // 3. Play the generated audio buffer
                 const buffer = audioCtx.createBuffer(1, payload.length, 48000);
                 buffer.getChannelData(0).set(payload);
 
@@ -104,16 +103,20 @@
                 source.buffer = buffer;
                 source.connect(audioCtx.destination);
                 source.start();
-                log("Pulse sent via airwaves.");
+                log("✅ Pulse sent successfully!");
+                
             } catch (e) {
-                log("Critical Error: " + e.message);
-                console.error("Binding Error Detail:", e);
+                log("❌ Encode Error: " + e.message);
+                console.error("Full Error:", e);
             }
         }
 
         async function toggleReceiver() {
-            if (isListening) return location.reload();
-            if (!ggwave) return log("Wait for engine...");
+            if (isListening) {
+                location.reload(); // Quick reset for demo purposes
+                return;
+            }
+            if (!ggwave) return log("Error: Engine not ready");
             await initAudio();
 
             try {
@@ -126,16 +129,19 @@
 
                 processor.onaudioprocess = (e) => {
                     const inputData = e.inputBuffer.getChannelData(0);
+                    
+                    // Decode expects exactly 1 argument (the audio buffer array)
                     const result = ggwave.decode(inputData);
+                    
                     if (result) {
-                        // The engine might return a Uint8Array or a String
-                        let decodedText = result;
-                        if (result instanceof Uint8Array) {
-                            decodedText = new TextDecoder().decode(result);
+                        let finalText = result;
+                        // Some older browsers/versions return a byte array from C++ instead of a string
+                        if (typeof result !== 'string') {
+                            finalText = new TextDecoder().decode(result);
                         }
                         
-                        log("Signal Decoded!");
-                        document.getElementById('rxOutput').innerText = decodedText;
+                        log("🎉 SIGNAL DECODED!");
+                        document.getElementById('rxOutput').innerText = finalText;
                         document.getElementById('rxOutput').classList.remove('italic');
                     }
                 };
@@ -143,10 +149,10 @@
                 isListening = true;
                 document.getElementById('rxBtn').innerText = "Stop Listening";
                 document.getElementById('rxBtn').classList.replace('bg-emerald-600', 'bg-red-600');
-                document.getElementById('rxOutput').innerText = "Listening...";
-                log("Mic Active.");
+                document.getElementById('rxOutput').innerText = "Scanning Air...";
+                log("Mic Active. Listening for 18kHz pulses.");
             } catch (err) {
-                log("Mic Access Denied.");
+                log("❌ Mic Access Denied.");
             }
         }
     </script>
