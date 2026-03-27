@@ -40,7 +40,7 @@
 
     <script>
         let ggwave = null;
-        let ggwaveInstance = null; // We were missing this!
+        let ggwaveInstance = null; 
         let audioCtx = null;
         let isListening = false;
 
@@ -65,14 +65,10 @@
         ggwave_factory(factoryConfig).then(obj => {
             ggwave = obj;
             
-            // 1. Get default settings from C++
             let parameters = ggwave.getDefaultParameters();
-            
-            // 2. Lock sample rates to 48kHz to match modern Web Audio
             parameters.sampleRateInp = 48000;
             parameters.sampleRateOut = 48000;
             
-            // 3. Create the DSP Instance! (This returns an integer ID)
             ggwaveInstance = ggwave.init(parameters);
 
             document.getElementById('engineStatus').innerText = "📡 Engine Online";
@@ -88,7 +84,8 @@
         }
 
         async function onSend() {
-            if (!ggwaveInstance) return log("Error: DSP Instance not running");
+            // THE FIX: Explicitly check against null! 0 is a valid ID!
+            if (ggwaveInstance === null) return log("Error: DSP Instance not running");
             await initAudio();
             
             let safeString = String(document.getElementById('txData').value).trim();
@@ -97,7 +94,6 @@
             try {
                 log(`Encoding: "${safeString}"`);
 
-                // THE FIX: Exactly 4 arguments. (Instance ID, String, Protocol, Volume)
                 const payload = ggwave.encode(ggwaveInstance, safeString, 4, 15);
                 
                 const buffer = audioCtx.createBuffer(1, payload.length, 48000);
@@ -117,7 +113,9 @@
 
         async function toggleReceiver() {
             if (isListening) return location.reload(); 
-            if (!ggwaveInstance) return log("Error: DSP Instance not running");
+            
+            // THE FIX: Explicitly check against null!
+            if (ggwaveInstance === null) return log("Error: DSP Instance not running");
             await initAudio();
 
             try {
@@ -131,7 +129,6 @@
                 processor.onaudioprocess = (e) => {
                     const inputData = e.inputBuffer.getChannelData(0);
                     
-                    // THE FIX: Decode also requires the Instance ID
                     const result = ggwave.decode(ggwaveInstance, inputData);
                     
                     if (result && result.length > 0) {
