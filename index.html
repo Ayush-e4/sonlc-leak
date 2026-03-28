@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonic Link | The Real Fix</title>
+    <title>Sonic Link | Visual Debug</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/gh/ggerganov/ggwave/bindings/javascript/ggwave.js"></script>
 </head>
@@ -11,19 +11,29 @@
 
     <div class="max-w-md w-full space-y-6">
         <div class="text-center">
-            <h1 class="text-4xl font-black text-cyan-400 tracking-tighter">SONIC LINK</h1>
+            <h1 class="text-4xl font-black text-cyan-400 tracking-tighter italic">SONIC LINK</h1>
             <p id="engineStatus" class="text-[10px] font-mono text-rose-500 mt-2 uppercase font-bold tracking-widest">Engine Offline</p>
         </div>
 
-        <div id="debugLog" class="bg-black/60 border border-slate-800 rounded-xl p-3 h-28 overflow-y-auto text-[10px] font-mono text-slate-500">
-            <div>[System] Booting WASM Environment...</div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+            <div class="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-2">
+                <span>Signal Strength (18-20kHz)</span>
+                <span id="dbVal">-∞ dB</span>
+            </div>
+            <div class="w-full bg-black h-4 rounded-full overflow-hidden border border-slate-800">
+                <div id="signalBar" class="h-full bg-cyan-500 w-0 transition-all duration-75"></div>
+            </div>
+        </div>
+
+        <div id="debugLog" class="bg-black/60 border border-slate-800 rounded-xl p-3 h-20 overflow-y-auto text-[10px] font-mono text-slate-500">
+            <div>[System] Initializing...</div>
         </div>
 
         <div class="space-y-4">
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl">
-                <input id="txData" type="text" value="Hello Sonic" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm mb-4 outline-none focus:border-cyan-500 text-white">
+                <input id="txData" type="text" value="Testing 123" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm mb-4 outline-none focus:border-cyan-500 text-white">
                 <button onclick="onSend()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl font-bold transition-all active:scale-95">
-                    Broadcast Silently
+                    Broadcast Pulse
                 </button>
             </div>
 
@@ -43,6 +53,7 @@
         let ggwaveInstance = null; 
         let audioCtx = null;
         let isListening = false;
+        let analyser = null;
 
         function log(msg) {
             const container = document.getElementById('debugLog');
@@ -53,69 +64,66 @@
         }
 
         const factoryConfig = {
-            locateFile: (path) => {
-                if (path.endsWith('.wasm')) {
-                    return 'https://cdn.jsdelivr.net/gh/ggerganov/ggwave/bindings/javascript/ggwave.wasm';
-                }
-                return path;
-            }
+            locateFile: (path) => path.endsWith('.wasm') ? 'https://cdn.jsdelivr.net/gh/ggerganov/ggwave/bindings/javascript/ggwave.wasm' : path
         };
 
-        // Initialize Engine & Create Instance
         ggwave_factory(factoryConfig).then(obj => {
             ggwave = obj;
-            
             let parameters = ggwave.getDefaultParameters();
             parameters.sampleRateInp = 48000;
             parameters.sampleRateOut = 48000;
-            
             ggwaveInstance = ggwave.init(parameters);
-
             document.getElementById('engineStatus').innerText = "📡 Engine Online";
             document.getElementById('engineStatus').classList.replace('text-rose-500', 'text-emerald-500');
-            log(`WASM Ready. Instance ID: ${ggwaveInstance}`);
-        }).catch(e => log("Init Error: " + e.message));
+            log("WASM Ready.");
+        });
 
         async function initAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 48000});
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 2048;
             }
             if (audioCtx.state === 'suspended') await audioCtx.resume();
         }
 
         async function onSend() {
-            // THE FIX: Explicitly check against null! 0 is a valid ID!
-            if (ggwaveInstance === null) return log("Error: DSP Instance not running");
+            if (ggwaveInstance === null) return log("Wait for engine...");
             await initAudio();
-            
-            let safeString = String(document.getElementById('txData').value).trim();
-            if (safeString === "") safeString = "Hello";
-            
+            let safeString = String(document.getElementById('txData').value).trim() || "Hello";
             try {
-                log(`Encoding: "${safeString}"`);
-
-                const payload = ggwave.encode(ggwaveInstance, safeString, 4, 15);
-                
+                // Protocol 4 = Ultrasound
+                const payload = ggwave.encode(ggwaveInstance, safeString, 4, 20); // Volume bumped to 20
                 const buffer = audioCtx.createBuffer(1, payload.length, 48000);
                 buffer.getChannelData(0).set(payload);
-
                 const source = audioCtx.createBufferSource();
                 source.buffer = buffer;
                 source.connect(audioCtx.destination);
                 source.start();
-                log("✅ Pulse broadcasted!");
-                
-            } catch (e) {
-                log("❌ Encode Error: " + e.message);
-                console.error(e);
-            }
+                log("✅ Pulse sent!");
+            } catch (e) { log("❌ Error: " + e.message); }
+        }
+
+        function updateMeter() {
+            if (!isListening) return;
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+
+            // 18kHz is roughly at index 750-850 of a 2048 FFT
+            let highFreqSum = 0;
+            for(let i = 750; i < 900; i++) { highFreqSum += dataArray[i]; }
+            let avg = highFreqSum / 150;
+            
+            let percentage = Math.min(100, (avg / 128) * 100);
+            document.getElementById('signalBar').style.width = percentage + "%";
+            document.getElementById('dbVal').innerText = Math.round(percentage) + "% Power";
+            
+            requestAnimationFrame(updateMeter);
         }
 
         async function toggleReceiver() {
             if (isListening) return location.reload(); 
-            
-            // THE FIX: Explicitly check against null!
-            if (ggwaveInstance === null) return log("Error: DSP Instance not running");
+            if (ggwaveInstance === null) return log("Wait for engine...");
             await initAudio();
 
             try {
@@ -123,17 +131,15 @@
                 const source = audioCtx.createMediaStreamSource(stream);
                 const processor = audioCtx.createScriptProcessor(1024, 1, 1);
 
+                source.connect(analyser); // Connect to the visualizer meter
                 source.connect(processor);
                 processor.connect(audioCtx.destination);
 
                 processor.onaudioprocess = (e) => {
                     const inputData = e.inputBuffer.getChannelData(0);
-                    
                     const result = ggwave.decode(ggwaveInstance, inputData);
-                    
                     if (result && result.length > 0) {
                         let finalText = typeof result === 'string' ? result : new TextDecoder().decode(result);
-                        
                         log(`🎉 DECODED: ${finalText}`);
                         document.getElementById('rxOutput').innerText = finalText;
                         document.getElementById('rxOutput').classList.remove('italic');
@@ -141,13 +147,12 @@
                 };
 
                 isListening = true;
+                updateMeter();
                 document.getElementById('rxBtn').innerText = "Stop Listening";
                 document.getElementById('rxBtn').classList.replace('bg-emerald-600', 'bg-red-600');
-                document.getElementById('rxOutput').innerText = "Scanning Air...";
-                log("Mic Active. Listening...");
-            } catch (err) {
-                log("❌ Mic Access Denied.");
-            }
+                document.getElementById('rxOutput').innerText = "Scanning...";
+                log("Mic Active.");
+            } catch (err) { log("❌ Mic Denied."); }
         }
     </script>
 </body>
