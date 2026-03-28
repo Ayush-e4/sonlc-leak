@@ -1,159 +1,908 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonic Link | Visual Debug</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/gh/ggerganov/ggwave/bindings/javascript/ggwave.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoundBridge — Acoustic Data Transfer</title>
+<script src="https://ggwave-js.ggwave.com/ggwave.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@700;800&display=swap');
+
+  :root {
+    --bg: #080810;
+    --surface: #0f0f1a;
+    --surface2: #161625;
+    --border: #1f1f35;
+    --accent: #00e5ff;
+    --accent2: #ff6b6b;
+    --green: #00ff88;
+    --text: #dde1f0;
+    --muted: #555575;
+    --font-mono: 'Space Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* subtle grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    width: 100%;
+    max-width: 780px;
+    padding: 40px 24px 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #fff;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .tagline {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  main {
+    width: 100%;
+    max-width: 780px;
+    padding: 32px 24px 60px;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+
+  .status-dot.ready { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .status-dot.loading { background: #ffcc00; animation: pulse 1s infinite; }
+  .status-dot.error { background: var(--accent2); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Mode tabs */
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .tab-btn {
+    padding: 12px;
+    border: none;
+    border-radius: 7px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .tab-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .tab-btn.active.send { color: var(--accent); }
+  .tab-btn.active.receive { color: var(--green); }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .card-label {
+    font-size: 0.65rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: -4px;
+  }
+
+  /* Protocol selector */
+  .protocol-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .protocol-row label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  select {
+    flex: 1;
+    min-width: 200px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 8px 12px;
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  select:focus { border-color: var(--accent); }
+
+  /* Textarea */
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    padding: 14px 16px;
+    resize: vertical;
+    min-height: 100px;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  /* Buttons */
+  .btn {
+    padding: 13px 24px;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-send {
+    background: var(--accent);
+    color: #000;
+  }
+
+  .btn-send:hover:not(:disabled) {
+    background: #33ecff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,229,255,0.3);
+  }
+
+  .btn-receive {
+    background: var(--green);
+    color: #000;
+  }
+
+  .btn-receive:hover:not(:disabled) {
+    background: #33ffaa;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,255,136,0.3);
+  }
+
+  .btn-stop {
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+  }
+
+  .btn-stop:hover:not(:disabled) {
+    background: rgba(255,107,107,0.1);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-row .btn { flex: 1; min-width: 120px; }
+
+  /* Visualizer */
+  .viz-wrap {
+    position: relative;
+  }
+
+  .viz-label {
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  canvas {
+    width: 100%;
+    height: 80px;
+    border-radius: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: block;
+  }
+
+  /* Received messages */
+  .messages-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .message-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 6px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message-text {
+    font-size: 0.9rem;
+    color: var(--text);
+    word-break: break-all;
+  }
+
+  .message-meta {
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 24px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+  }
+
+  /* Sending animation */
+  .sending-indicator {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--accent);
+  }
+
+  .sending-indicator.active { display: flex; }
+
+  .wave-dots {
+    display: flex;
+    gap: 3px;
+  }
+
+  .wave-dots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: waveDot 1.2s infinite;
+  }
+
+  .wave-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .wave-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes waveDot {
+    0%, 80%, 100% { transform: scale(1); opacity: 0.4; }
+    40% { transform: scale(1.5); opacity: 1; }
+  }
+
+  .char-count {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: right;
+    margin-top: -8px;
+  }
+
+  .char-count.warn { color: var(--accent2); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+  }
+
+  .info-box {
+    background: rgba(0,229,255,0.05);
+    border: 1px solid rgba(0,229,255,0.15);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .info-box strong { color: var(--accent); font-weight: 400; }
+
+  /* listening ring */
+  .listen-ring {
+    display: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--green);
+    animation: ring 1s infinite;
+  }
+
+  .listen-ring.active { display: block; }
+
+  @keyframes ring {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+  }
+
+  .listening-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    min-height: 20px;
+  }
+
+  .listening-row.active { color: var(--green); }
+
+  footer {
+    width: 100%;
+    max-width: 780px;
+    padding: 0 24px 32px;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.65rem;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+</style>
 </head>
-<body class="bg-[#0b0f1a] text-slate-200 min-h-screen p-4 flex flex-col items-center justify-center">
+<body>
 
-    <div class="max-w-md w-full space-y-6">
-        <div class="text-center">
-            <h1 class="text-4xl font-black text-cyan-400 tracking-tighter italic">SONIC LINK</h1>
-            <p id="engineStatus" class="text-[10px] font-mono text-rose-500 mt-2 uppercase font-bold tracking-widest">Engine Offline</p>
+<header>
+  <div class="logo">Sound<span>Bridge</span></div>
+  <div class="tagline">Acoustic Data Transfer · ggwave · Web Audio API</div>
+</header>
+
+<main>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="status-dot loading" id="statusDot"></div>
+    <span id="statusText">Loading ggwave WASM module...</span>
+  </div>
+
+  <!-- Mode Tabs -->
+  <div class="mode-tabs">
+    <button class="tab-btn send active" id="tabSend" onclick="switchMode('send')">📡 Send</button>
+    <button class="tab-btn receive" id="tabReceive" onclick="switchMode('receive')">🎙️ Receive</button>
+  </div>
+
+  <!-- Protocol selector (shared) -->
+  <div class="card">
+    <div class="card-label">Protocol Mode</div>
+    <div class="protocol-row">
+      <label>Frequency band:</label>
+      <select id="protocolSelect">
+        <option value="1">Audible — Fast (best for demos, you hear it)</option>
+        <option value="0">Audible — Normal (more reliable, slower)</option>
+        <option value="5">Ultrasound — Normal (near-silent, ~18–20 kHz)</option>
+        <option value="6">Ultrasound — Fast (near-silent, faster)</option>
+        <option value="3">Audible — Fastest (least reliable)</option>
+      </select>
+    </div>
+    <div class="info-box">
+      <strong>Tip:</strong> Start with <strong>Audible Fast</strong> — you'll hear the tones and know it's working.
+      Switch to <strong>Ultrasound</strong> if you want silent transmission. Both devices must use the same mode.
+      If decoding fails, try a slower mode or move devices closer.
+    </div>
+  </div>
+
+  <!-- SEND PANEL -->
+  <div id="sendPanel">
+    <div class="card">
+      <div class="card-label">Message</div>
+      <textarea id="messageInput" placeholder="Type your message here..." maxlength="140" oninput="updateCharCount()"></textarea>
+      <div class="char-count" id="charCount">0 / 140</div>
+
+      <div class="btn-row">
+        <button class="btn btn-send" id="sendBtn" onclick="sendMessage()" disabled>▶ Transmit</button>
+      </div>
+
+      <div class="sending-indicator" id="sendingIndicator">
+        <div class="wave-dots">
+          <span></span><span></span><span></span>
         </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-            <div class="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-2">
-                <span>Signal Strength (18-20kHz)</span>
-                <span id="dbVal">-∞ dB</span>
-            </div>
-            <div class="w-full bg-black h-4 rounded-full overflow-hidden border border-slate-800">
-                <div id="signalBar" class="h-full bg-cyan-500 w-0 transition-all duration-75"></div>
-            </div>
-        </div>
-
-        <div id="debugLog" class="bg-black/60 border border-slate-800 rounded-xl p-3 h-20 overflow-y-auto text-[10px] font-mono text-slate-500">
-            <div>[System] Initializing...</div>
-        </div>
-
-        <div class="space-y-4">
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl">
-                <input id="txData" type="text" value="Testing 123" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm mb-4 outline-none focus:border-cyan-500 text-white">
-                <button onclick="onSend()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl font-bold transition-all active:scale-95">
-                    Broadcast Pulse
-                </button>
-            </div>
-
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl">
-                <div id="rxOutput" class="bg-black/40 rounded-lg p-4 h-20 mb-4 text-emerald-400 font-mono text-sm flex items-center justify-center italic border border-slate-800 break-all">
-                    Standing by...
-                </div>
-                <button id="rxBtn" onclick="toggleReceiver()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold transition-all active:scale-95">
-                    Start Listening
-                </button>
-            </div>
-        </div>
+        Transmitting via speaker...
+      </div>
     </div>
 
-    <script>
-        let ggwave = null;
-        let ggwaveInstance = null; 
-        let audioCtx = null;
-        let isListening = false;
-        let analyser = null;
+    <div class="card">
+      <div class="viz-label">Output Waveform</div>
+      <canvas id="sendCanvas"></canvas>
+    </div>
+  </div>
 
-        function log(msg) {
-            const container = document.getElementById('debugLog');
-            const entry = document.createElement('div');
-            entry.innerText = `> ${msg}`;
-            container.appendChild(entry);
-            container.scrollTop = container.scrollHeight;
-        }
+  <!-- RECEIVE PANEL -->
+  <div id="receivePanel" style="display:none">
+    <div class="card">
+      <div class="card-label">Microphone</div>
 
-        const factoryConfig = {
-            locateFile: (path) => path.endsWith('.wasm') ? 'https://cdn.jsdelivr.net/gh/ggerganov/ggwave/bindings/javascript/ggwave.wasm' : path
-        };
+      <div class="btn-row">
+        <button class="btn btn-receive" id="startListenBtn" onclick="startListening()" disabled>🎙 Start Listening</button>
+        <button class="btn btn-stop" id="stopListenBtn" onclick="stopListening()" disabled>■ Stop</button>
+      </div>
 
-        ggwave_factory(factoryConfig).then(obj => {
-            ggwave = obj;
-            let parameters = ggwave.getDefaultParameters();
-            parameters.sampleRateInp = 48000;
-            parameters.sampleRateOut = 48000;
-            ggwaveInstance = ggwave.init(parameters);
-            document.getElementById('engineStatus').innerText = "📡 Engine Online";
-            document.getElementById('engineStatus').classList.replace('text-rose-500', 'text-emerald-500');
-            log("WASM Ready.");
-        });
+      <div class="listening-row" id="listeningRow">
+        <div class="listen-ring" id="listenRing"></div>
+        <span id="listeningText">Press Start Listening to begin</span>
+      </div>
+    </div>
 
-        async function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 48000});
-                analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 2048;
-            }
-            if (audioCtx.state === 'suspended') await audioCtx.resume();
-        }
+    <div class="card">
+      <div class="viz-label">Live Frequency Spectrum</div>
+      <canvas id="receiveCanvas"></canvas>
+    </div>
 
-        async function onSend() {
-            if (ggwaveInstance === null) return log("Wait for engine...");
-            await initAudio();
-            let safeString = String(document.getElementById('txData').value).trim() || "Hello";
-            try {
-                // Protocol 4 = Ultrasound
-                const payload = ggwave.encode(ggwaveInstance, safeString, 4, 20); // Volume bumped to 20
-                const buffer = audioCtx.createBuffer(1, payload.length, 48000);
-                buffer.getChannelData(0).set(payload);
-                const source = audioCtx.createBufferSource();
-                source.buffer = buffer;
-                source.connect(audioCtx.destination);
-                source.start();
-                log("✅ Pulse sent!");
-            } catch (e) { log("❌ Error: " + e.message); }
-        }
+    <div class="card">
+      <div class="card-label">Received Messages</div>
+      <div class="messages-wrap" id="messagesWrap">
+        <div class="empty-state" id="emptyState">No messages received yet.<br>Start listening and play audio from another device.</div>
+      </div>
+    </div>
+  </div>
 
-        function updateMeter() {
-            if (!isListening) return;
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
-            analyser.getByteFrequencyData(dataArray);
+</main>
 
-            // 18kHz is roughly at index 750-850 of a 2048 FFT
-            let highFreqSum = 0;
-            for(let i = 750; i < 900; i++) { highFreqSum += dataArray[i]; }
-            let avg = highFreqSum / 150;
-            
-            let percentage = Math.min(100, (avg / 128) * 100);
-            document.getElementById('signalBar').style.width = percentage + "%";
-            document.getElementById('dbVal').innerText = Math.round(percentage) + "% Power";
-            
-            requestAnimationFrame(updateMeter);
-        }
+<footer>
+  <span>SoundBridge — powered by <a href="https://github.com/ggerganov/ggwave" target="_blank">ggwave</a> + Web Audio API</span>
+  <span>Open source · GitHub Pages</span>
+</footer>
 
-        async function toggleReceiver() {
-            if (isListening) return location.reload(); 
-            if (ggwaveInstance === null) return log("Wait for engine...");
-            await initAudio();
+<script>
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let ggwaveInstance = null;
+let ggwaveModule = null;
+let currentMode = 'send';
 
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const source = audioCtx.createMediaStreamSource(stream);
-                const processor = audioCtx.createScriptProcessor(1024, 1, 1);
+// Send
+let sendAudioCtx = null;
+let sendAnalyser = null;
+let sendAnimFrame = null;
 
-                source.connect(analyser); // Connect to the visualizer meter
-                source.connect(processor);
-                processor.connect(audioCtx.destination);
+// Receive
+let receiveAudioCtx = null;
+let receiveAnalyser = null;
+let mediaStream = null;
+let receiveAnimFrame = null;
+let decodeInterval = null;
+let scriptProcessor = null;
+let receiveBuffer = [];
 
-                processor.onaudioprocess = (e) => {
-                    const inputData = e.inputBuffer.getChannelData(0);
-                    const result = ggwave.decode(ggwaveInstance, inputData);
-                    if (result && result.length > 0) {
-                        let finalText = typeof result === 'string' ? result : new TextDecoder().decode(result);
-                        log(`🎉 DECODED: ${finalText}`);
-                        document.getElementById('rxOutput').innerText = finalText;
-                        document.getElementById('rxOutput').classList.remove('italic');
-                    }
-                };
+// ─────────────────────────────────────────────
+// INIT ggwave
+// ─────────────────────────────────────────────
+async function initGgwave() {
+  try {
+    setStatus('loading', 'Loading ggwave WASM module...');
+    ggwaveModule = await ggwave_factory();
+    const params = ggwaveModule.getDefaultParameters();
+    params.sampleRateInp = 48000;
+    params.sampleRateOut = 48000;
+    ggwaveInstance = ggwaveModule.init(params);
+    setStatus('ready', 'ggwave ready — choose Send or Receive');
+    document.getElementById('sendBtn').disabled = false;
+    document.getElementById('startListenBtn').disabled = false;
+  } catch (err) {
+    setStatus('error', 'Failed to load ggwave: ' + err.message);
+    console.error(err);
+  }
+}
 
-                isListening = true;
-                updateMeter();
-                document.getElementById('rxBtn').innerText = "Stop Listening";
-                document.getElementById('rxBtn').classList.replace('bg-emerald-600', 'bg-red-600');
-                document.getElementById('rxOutput').innerText = "Scanning...";
-                log("Mic Active.");
-            } catch (err) { log("❌ Mic Denied."); }
-        }
-    </script>
+function setStatus(state, text) {
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  dot.className = 'status-dot ' + state;
+  txt.textContent = text;
+}
+
+// ─────────────────────────────────────────────
+// MODE SWITCH
+// ─────────────────────────────────────────────
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('sendPanel').style.display = mode === 'send' ? 'flex' : 'none';
+  document.getElementById('sendPanel').style.flexDirection = 'column';
+  document.getElementById('sendPanel').style.gap = '20px';
+  document.getElementById('receivePanel').style.display = mode === 'receive' ? 'flex' : 'none';
+  document.getElementById('receivePanel').style.flexDirection = 'column';
+  document.getElementById('receivePanel').style.gap = '20px';
+  document.getElementById('tabSend').className = 'tab-btn send' + (mode === 'send' ? ' active' : '');
+  document.getElementById('tabReceive').className = 'tab-btn receive' + (mode === 'receive' ? ' active' : '');
+
+  if (mode === 'send') stopListening();
+}
+
+// ─────────────────────────────────────────────
+// CHAR COUNT
+// ─────────────────────────────────────────────
+function updateCharCount() {
+  const val = document.getElementById('messageInput').value.length;
+  const el = document.getElementById('charCount');
+  el.textContent = val + ' / 140';
+  el.className = 'char-count' + (val > 120 ? ' warn' : '');
+}
+
+// ─────────────────────────────────────────────
+// SEND
+// ─────────────────────────────────────────────
+async function sendMessage() {
+  const text = document.getElementById('messageInput').value.trim();
+  if (!text) return;
+  if (!ggwaveInstance) return;
+
+  const protocol = parseInt(document.getElementById('protocolSelect').value);
+
+  // Encode
+  let waveform;
+  try {
+    waveform = ggwaveModule.encode(ggwaveInstance, text, protocol, 10);
+  } catch (e) {
+    setStatus('error', 'Encode failed: ' + e.message);
+    return;
+  }
+
+  // Audio context
+  if (!sendAudioCtx) sendAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+  if (sendAudioCtx.state === 'suspended') await sendAudioCtx.resume();
+
+  const sampleRate = sendAudioCtx.sampleRate;
+  const float32 = convertToFloat32(waveform);
+  const buffer = sendAudioCtx.createBuffer(1, float32.length, sampleRate);
+  buffer.copyToChannel(float32, 0);
+
+  const source = sendAudioCtx.createBufferSource();
+  source.buffer = buffer;
+
+  // Analyser for visualizer
+  if (!sendAnalyser) {
+    sendAnalyser = sendAudioCtx.createAnalyser();
+    sendAnalyser.fftSize = 2048;
+    sendAnalyser.connect(sendAudioCtx.destination);
+  }
+
+  source.connect(sendAnalyser);
+  source.start();
+
+  // UI feedback
+  setStatus('ready', 'Transmitting...');
+  document.getElementById('sendingIndicator').classList.add('active');
+  document.getElementById('sendBtn').disabled = true;
+
+  startSendVisualizer();
+
+  source.onended = () => {
+    document.getElementById('sendingIndicator').classList.remove('active');
+    document.getElementById('sendBtn').disabled = false;
+    setStatus('ready', 'Transmission complete ✓');
+    stopSendVisualizer();
+  };
+}
+
+function convertToFloat32(encoded) {
+  // ggwave returns Int8Array or Int16Array depending on build
+  if (encoded instanceof Float32Array) return encoded;
+  if (encoded instanceof Int16Array) {
+    const f = new Float32Array(encoded.length);
+    for (let i = 0; i < encoded.length; i++) f[i] = encoded[i] / 32768.0;
+    return f;
+  }
+  if (encoded instanceof Int8Array || encoded instanceof Uint8Array) {
+    const i16 = new Int16Array(encoded.buffer);
+    const f = new Float32Array(i16.length);
+    for (let i = 0; i < i16.length; i++) f[i] = i16[i] / 32768.0;
+    return f;
+  }
+  return new Float32Array(encoded);
+}
+
+// ─────────────────────────────────────────────
+// SEND VISUALIZER
+// ─────────────────────────────────────────────
+function startSendVisualizer() {
+  const canvas = document.getElementById('sendCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+
+  const data = new Uint8Array(sendAnalyser.frequencyBinCount);
+
+  function draw() {
+    sendAnimFrame = requestAnimationFrame(draw);
+    sendAnalyser.getByteFrequencyData(data);
+
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = '#161625';
+    ctx.fillRect(0, 0, W, H);
+
+    const barW = W / data.length * 2.5;
+    let x = 0;
+    for (let i = 0; i < data.length; i++) {
+      const h = (data[i] / 255) * H;
+      const r = Math.floor(0 + (data[i] / 255) * 50);
+      const g = Math.floor(150 + (data[i] / 255) * 105);
+      const b = 255;
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(x, H - h, barW, h);
+      x += barW + 1;
+      if (x > W) break;
+    }
+  }
+  draw();
+}
+
+function stopSendVisualizer() {
+  if (sendAnimFrame) { cancelAnimationFrame(sendAnimFrame); sendAnimFrame = null; }
+  const canvas = document.getElementById('sendCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  ctx.fillStyle = '#161625';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// ─────────────────────────────────────────────
+// RECEIVE
+// ─────────────────────────────────────────────
+async function startListening() {
+  if (!ggwaveInstance) return;
+
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  } catch (e) {
+    setStatus('error', 'Mic access denied: ' + e.message);
+    return;
+  }
+
+  receiveAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+  if (receiveAudioCtx.state === 'suspended') await receiveAudioCtx.resume();
+
+  const source = receiveAudioCtx.createMediaStreamSource(mediaStream);
+
+  receiveAnalyser = receiveAudioCtx.createAnalyser();
+  receiveAnalyser.fftSize = 2048;
+
+  // ScriptProcessor for feeding samples to ggwave
+  scriptProcessor = receiveAudioCtx.createScriptProcessor(4096, 1, 1);
+  scriptProcessor.onaudioprocess = (e) => {
+    const inputData = e.inputBuffer.getChannelData(0);
+    const int16 = new Int16Array(inputData.length);
+    for (let i = 0; i < inputData.length; i++) {
+      int16[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+    }
+    const result = ggwaveModule.decode(ggwaveInstance, int16);
+    if (result && result.length > 0) {
+      const decoded = new TextDecoder().decode(result);
+      if (decoded.trim()) addMessage(decoded.trim());
+    }
+  };
+
+  source.connect(receiveAnalyser);
+  source.connect(scriptProcessor);
+  scriptProcessor.connect(receiveAudioCtx.destination);
+
+  // UI
+  document.getElementById('startListenBtn').disabled = true;
+  document.getElementById('stopListenBtn').disabled = false;
+  document.getElementById('listenRing').classList.add('active');
+  document.getElementById('listeningRow').classList.add('active');
+  document.getElementById('listeningText').textContent = 'Listening for acoustic data...';
+  setStatus('ready', 'Receiving — waiting for signal...');
+
+  startReceiveVisualizer();
+}
+
+function stopListening() {
+  if (scriptProcessor) { scriptProcessor.disconnect(); scriptProcessor = null; }
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  if (receiveAudioCtx) { receiveAudioCtx.close(); receiveAudioCtx = null; }
+  if (receiveAnimFrame) { cancelAnimationFrame(receiveAnimFrame); receiveAnimFrame = null; }
+
+  document.getElementById('startListenBtn').disabled = false;
+  document.getElementById('stopListenBtn').disabled = true;
+  document.getElementById('listenRing').classList.remove('active');
+  document.getElementById('listeningRow').classList.remove('active');
+  document.getElementById('listeningText').textContent = 'Press Start Listening to begin';
+  setStatus('ready', 'ggwave ready — choose Send or Receive');
+
+  const canvas = document.getElementById('receiveCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  ctx.fillStyle = '#161625';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// ─────────────────────────────────────────────
+// RECEIVE VISUALIZER
+// ─────────────────────────────────────────────
+function startReceiveVisualizer() {
+  const canvas = document.getElementById('receiveCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+
+  const data = new Uint8Array(receiveAnalyser.frequencyBinCount);
+
+  function draw() {
+    receiveAnimFrame = requestAnimationFrame(draw);
+    receiveAnalyser.getByteFrequencyData(data);
+
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = 'rgba(22,22,37,0.6)';
+    ctx.fillRect(0, 0, W, H);
+
+    const barW = W / data.length * 2.5;
+    let x = 0;
+    for (let i = 0; i < data.length; i++) {
+      const h = (data[i] / 255) * H;
+      const r = 0;
+      const g = Math.floor(180 + (data[i] / 255) * 75);
+      const b = Math.floor(100 + (data[i] / 255) * 100);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(x, H - h, barW, h);
+      x += barW + 1;
+      if (x > W) break;
+    }
+  }
+  draw();
+}
+
+// ─────────────────────────────────────────────
+// ADD RECEIVED MESSAGE
+// ─────────────────────────────────────────────
+function addMessage(text) {
+  const wrap = document.getElementById('messagesWrap');
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.remove();
+
+  setStatus('ready', 'Message received ✓');
+
+  const time = new Date().toLocaleTimeString();
+  const protocol = document.getElementById('protocolSelect').options[document.getElementById('protocolSelect').selectedIndex].text.split('—')[0].trim();
+
+  const item = document.createElement('div');
+  item.className = 'message-item';
+  item.innerHTML = `
+    <div class="message-text">${escapeHtml(text)}</div>
+    <div class="message-meta">${time} · ${protocol}</div>
+  `;
+  wrap.insertBefore(item, wrap.firstChild);
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────
+window.addEventListener('load', () => {
+  // Draw empty canvases
+  ['sendCanvas','receiveCanvas'].forEach(id => {
+    const c = document.getElementById(id);
+    if (!c) return;
+    c.width = c.offsetWidth * window.devicePixelRatio || 600;
+    c.height = c.offsetHeight * window.devicePixelRatio || 80;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#161625';
+    ctx.fillRect(0, 0, c.width, c.height);
+  });
+
+  initGgwave();
+});
+</script>
 </body>
 </html>
