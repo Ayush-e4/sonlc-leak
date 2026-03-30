@@ -22,6 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearBtn = document.getElementById('clearBtn');
     const statusEl = document.getElementById('status');
 
+    if (!callsignBadge || !protocolBadge || !modeBadge || !byteMeter || !hzDisplay || !receiverHint || !messageCount || !chatFeed || !emptyState || !composeInput || !composeHint || !txBtn || !rxBtn || !clearBtn || !statusEl) {
+        return;
+    }
+
     let settings = window.SonicLink.loadSettings();
     let ggwaveModule = null;
     let ggwaveInstance = null;

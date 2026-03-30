@@ -3,98 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonic Link Setup</title>
+    <title>Sonic Link</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="styles.css">
     <script src="shared.js" defer></script>
     <script src="setup.js" defer></script>
 </head>
-<body class="page-shell">
-    <div class="shell">
-        <header class="hero">
-            <div class="eyebrow">Sonic Link Setup</div>
-            <h1 class="hero-title">Prepare The Link</h1>
-            <p class="hero-copy">
-                Configure the shared protocol once, then jump into a cleaner chat screen built for phones and short-range covert conversations.
+<body class="simple-body">
+    <main class="landing">
+        <section class="landing-copy">
+            <p class="mini-label">Sonic Link</p>
+            <h1 class="landing-title">Chat through sound.</h1>
+            <p class="landing-text">
+                Pick a name, choose the audio mode, and jump into a simple chat screen.
             </p>
-        </header>
+        </section>
 
-        <main class="layout layout-setup">
-            <section class="card">
-                <div class="section-head">
-                    <div>
-                        <p class="section-kicker">Connection Profile</p>
-                        <h2 class="section-title">Save the room settings</h2>
-                    </div>
-                    <span class="pill">Step 1</span>
+        <section class="simple-card">
+            <form id="setupForm" class="simple-form">
+                <label class="simple-field">
+                    <span class="simple-label">Your name</span>
+                    <input id="callsignInput" class="simple-input" type="text" maxlength="16" placeholder="Ghost-407">
+                </label>
+
+                <label class="simple-field">
+                    <span class="simple-label">Audio mode</span>
+                    <select id="protocolSelect" class="simple-input">
+                        <option value="1">Audible Fast</option>
+                        <option value="0">Audible Normal</option>
+                        <option value="4">Ultrasound Fast</option>
+                        <option value="3">Ultrasound Normal</option>
+                    </select>
+                </label>
+
+                <div class="simple-note">
+                    <strong id="summaryBudget">140 byte radio budget</strong>
+                    <p id="budgetNote">Keep messages short so the modem can send them cleanly.</p>
                 </div>
 
-                <form id="setupForm" class="stack-lg">
-                    <div class="field-grid">
-                        <label class="field">
-                            <span class="field-label">Callsign</span>
-                            <input id="callsignInput" class="input" type="text" maxlength="16" placeholder="Ghost-407">
-                        </label>
-
-                        <label class="field">
-                            <span class="field-label">Protocol</span>
-                            <select id="protocolSelect" class="input">
-                                <option value="1">Audible Fast</option>
-                                <option value="0">Audible Normal</option>
-                                <option value="4">Ultrasound Fast</option>
-                                <option value="3">Ultrasound Normal</option>
-                            </select>
-                        </label>
-                    </div>
-
-                    <div class="note-block">
-                        <p class="note-title">About the console warnings</p>
-                        <p id="budgetNote" class="note-copy">
-                            `Truncating data from 175 to 140 bytes` means the sound modem hit its payload cap. The new chat page blocks oversized packets before transmit.
-                        </p>
-                    </div>
-
-                    <div class="button-row">
-                        <button type="submit" class="button button-primary">Open Chat</button>
-                        <button id="resetBtn" type="button" class="button button-secondary">Reset</button>
-                    </div>
-                </form>
-            </section>
-
-            <aside class="card">
-                <div class="section-head">
-                    <div>
-                        <p class="section-kicker">Quick Notes</p>
-                        <h2 class="section-title">What changed</h2>
-                    </div>
-                    <span class="pill">Step 2</span>
+                <div class="simple-actions">
+                    <button type="submit" class="primary-btn">Start Chat</button>
+                    <button id="resetBtn" type="button" class="secondary-btn">Reset</button>
                 </div>
+            </form>
 
-                <div class="stack-md">
-                    <div class="summary-item">
-                        <span class="summary-label">Payload cap</span>
-                        <strong id="summaryBudget">140 byte radio budget</strong>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Favicon</span>
-                        <strong>Added, so the 404 is gone</strong>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Mobile flow</span>
-                        <strong>Setup first, chat second</strong>
-                    </div>
-                </div>
-
-                <div class="note-block note-block-accent">
-                    <p class="note-title">Best cross-device setup</p>
-                    <p class="note-copy">
-                        Use `Audible Fast` first, host the page over HTTPS or localhost for the receiver, and keep messages short.
-                    </p>
-                </div>
-
-                <footer id="setupStatus" class="status-line">Settings live only on this device until you open chat.</footer>
-            </aside>
-        </main>
-    </div>
+            <p id="setupStatus" class="simple-status">Settings are saved on this device.</p>
+        </section>
+    </main>
 </body>
 </html>

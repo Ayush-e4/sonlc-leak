@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryBudget = document.getElementById('summaryBudget');
     const budgetNote = document.getElementById('budgetNote');
 
+    if (!callsignInput || !protocolSelect || !setupForm || !resetBtn || !setupStatus || !summaryBudget || !budgetNote) {
+        return;
+    }
+
     function readForm() {
         return {
             callsign: callsignInput.value,

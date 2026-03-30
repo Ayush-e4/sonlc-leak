@@ -10,91 +10,76 @@
     <script src="shared.js" defer></script>
     <script src="chat.js" defer></script>
 </head>
-<body class="page-shell">
-    <div class="shell shell-chat">
-        <header class="hero hero-chat">
-            <div class="eyebrow">Sonic Link Chat</div>
-            <div class="hero-topline">
-                <h1 class="hero-title">Whisper Channel</h1>
-                <a href="index.html" class="button button-secondary">Edit Setup</a>
+<body class="simple-body">
+    <main class="chat-page">
+        <header class="chat-topbar">
+            <div>
+                <p class="mini-label">Sonic Link</p>
+                <h1 class="chat-title">Chat</h1>
             </div>
-            <p class="hero-copy">
-                Transmit short packets through sound. The chat page now keeps only the live controls that matter during conversation.
-            </p>
+            <a href="index.html" class="secondary-btn link-btn">Back</a>
         </header>
 
-        <main class="layout layout-chat">
-            <aside class="card card-tight">
-                <div class="section-head">
-                    <div>
-                        <p class="section-kicker">Channel Info</p>
-                        <h2 class="section-title">Current profile</h2>
+        <section class="chat-info-row">
+            <div class="info-pill">
+                <span class="info-key">Name</span>
+                <strong id="callsignBadge">Ghost-000</strong>
+            </div>
+            <div class="info-pill">
+                <span class="info-key">Mode</span>
+                <strong id="protocolBadge">Audible Fast</strong>
+            </div>
+            <div class="info-pill">
+                <span class="info-key">Size</span>
+                <strong id="byteMeter">0 / 140 bytes</strong>
+            </div>
+            <div class="info-pill" id="modeBadge">
+                Open Chat
+            </div>
+        </section>
+
+        <section class="chat-shell">
+            <aside class="chat-side">
+                <div class="simple-card side-card">
+                    <div class="side-actions">
+                        <button id="rxBtn" class="primary-btn">Start Listening</button>
+                        <button id="clearBtn" class="secondary-btn">Clear</button>
                     </div>
-                    <span id="modeBadge" class="pill">Open Chat</span>
+                    <p id="receiverHint" class="simple-status">Allow mic access, then start listening.</p>
                 </div>
 
-                <div class="stack-md">
-                    <div class="summary-item">
-                        <span class="summary-label">Callsign</span>
-                        <strong id="callsignBadge">Ghost-000</strong>
+                <div class="simple-card side-card">
+                    <div class="canvas-head">
+                        <span class="simple-label">Signal</span>
+                        <span id="hzDisplay" class="tiny-pill">0Hz - 24.0kHz</span>
                     </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Protocol</span>
-                        <strong id="protocolBadge">Audible Fast</strong>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Packet Meter</span>
-                        <strong id="byteMeter">0 / 140 bytes</strong>
-                    </div>
+                    <canvas id="visualizer" class="simple-visualizer"></canvas>
                 </div>
-
-                <div class="visual-card">
-                    <div class="visual-head">
-                        <span class="section-kicker">Signal Scope</span>
-                        <span id="hzDisplay" class="pill">0Hz - 24.0kHz</span>
-                    </div>
-                    <canvas id="visualizer" class="visualizer"></canvas>
-                </div>
-
-                <div class="button-stack">
-                    <button id="rxBtn" class="button button-primary">Start Listening</button>
-                    <button id="clearBtn" class="button button-secondary">Clear Transcript</button>
-                </div>
-
-                <p id="receiverHint" class="status-line">
-                    Keep this page open and the mic permission allowed while listening.
-                </p>
             </aside>
 
-            <section class="card card-chat">
-                <div class="chat-head">
-                    <div>
-                        <p class="section-kicker">Transcript</p>
-                        <h2 class="section-title">Live exchange</h2>
-                    </div>
-                    <span id="messageCount" class="pill">0 packets</span>
+            <section class="simple-card chat-card">
+                <div class="chat-header-row">
+                    <span class="simple-label">Messages</span>
+                    <span id="messageCount" class="tiny-pill">0 packets</span>
                 </div>
 
-                <div id="chatFeed" class="chat-feed">
-                    <div id="emptyState" class="empty-state">
-                        No packets yet. Start listening on one device, then send from the other.
+                <div id="chatFeed" class="simple-chat-feed">
+                    <div id="emptyState" class="simple-empty">
+                        No messages yet. Start listening on one device and send from the other.
                     </div>
                 </div>
 
-                <div class="composer">
-                    <label for="composeInput" class="field-label">Compose</label>
-                    <textarea id="composeInput" class="input input-textarea" maxlength="120" placeholder="Type a short message..."></textarea>
-                    <div class="composer-bar">
-                        <p id="composeHint" class="status-line">
-                            Enter sends. Shift + Enter adds a new line. Smaller packets travel better.
-                        </p>
-                        <button id="txBtn" class="button button-primary">Send Pulse</button>
+                <div class="simple-composer">
+                    <textarea id="composeInput" class="simple-input simple-textarea" maxlength="120" placeholder="Type a short message..."></textarea>
+                    <div class="simple-compose-row">
+                        <p id="composeHint" class="simple-status">Press Enter to send. Keep messages short for better delivery.</p>
+                        <button id="txBtn" class="primary-btn">Send</button>
                     </div>
                 </div>
             </section>
-        </main>
+        </section>
 
-        <footer id="status" class="status-line status-line-footer">Loading modem...</footer>
-    </div>
+        <footer id="status" class="simple-status center-status">Loading modem...</footer>
+    </main>
 </body>
 </html>
