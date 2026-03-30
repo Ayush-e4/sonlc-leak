@@ -1,33 +1,36 @@
 document.addEventListener('DOMContentLoaded', () => {
     const callsignInput = document.getElementById('callsignInput');
     const protocolSelect = document.getElementById('protocolSelect');
+    const autoReceiveInput = document.getElementById('autoReceiveInput');
     const setupForm = document.getElementById('setupForm');
     const resetBtn = document.getElementById('resetBtn');
     const setupStatus = document.getElementById('setupStatus');
     const summaryBudget = document.getElementById('summaryBudget');
     const budgetNote = document.getElementById('budgetNote');
 
-    if (!callsignInput || !protocolSelect || !setupForm || !resetBtn || !setupStatus || !summaryBudget || !budgetNote) {
+    if (!callsignInput || !protocolSelect || !autoReceiveInput || !setupForm || !resetBtn || !setupStatus || !summaryBudget || !budgetNote) {
         return;
     }
 
     function readForm() {
         return {
             callsign: callsignInput.value,
-            protocol: protocolSelect.value
+            protocol: protocolSelect.value,
+            autoReceive: autoReceiveInput.checked
         };
     }
 
     function applySettings(settings) {
         callsignInput.value = settings.callsign;
         protocolSelect.value = settings.protocol;
+        autoReceiveInput.checked = Boolean(settings.autoReceive);
         renderSummary();
     }
 
     function renderSummary() {
         const settings = readForm();
         summaryBudget.textContent = `${window.SonicLink.MAX_PACKET_BYTES}-byte packet limit`;
-        budgetNote.textContent = 'Short messages send more reliably.';
+        budgetNote.textContent = settings.autoReceive ? 'Receiver will start automatically in chat.' : 'Receiver will stay off until you enable it in chat.';
         setupStatus.textContent = `Current profile: ${settings.callsign || 'Ghost'} • ${window.SonicLink.getProtocolLabel(settings.protocol)}`;
     }
 
@@ -38,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     applySettings(window.SonicLink.loadSettings());
 
-    [callsignInput, protocolSelect].forEach((element) => {
+    [callsignInput, protocolSelect, autoReceiveInput].forEach((element) => {
         element.addEventListener('input', persist);
         element.addEventListener('change', persist);
     });
@@ -46,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupForm.addEventListener('submit', (event) => {
         event.preventDefault();
         persist();
-        setupStatus.textContent = 'Opening chat...';
+        setupStatus.textContent = 'Opening full chat...';
         window.location.href = 'chat.html';
     });
 

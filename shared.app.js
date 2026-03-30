@@ -54,7 +54,8 @@
     function defaultSettings() {
         return {
             callsign: normalizeCallsign(''),
-            protocol: '1'
+            protocol: '1',
+            autoReceive: true
         };
     }
 
@@ -71,14 +72,16 @@
 
         return {
             callsign: normalizeCallsign(stored.callsign || defaults.callsign),
-            protocol: String(stored.protocol || defaults.protocol)
+            protocol: String(stored.protocol || defaults.protocol),
+            autoReceive: stored.autoReceive !== undefined ? Boolean(stored.autoReceive) : defaults.autoReceive
         };
     }
 
     function saveSettings(settings) {
         const normalized = {
             callsign: normalizeCallsign(settings.callsign),
-            protocol: String(settings.protocol || '1')
+            protocol: String(settings.protocol || '1'),
+            autoReceive: Boolean(settings.autoReceive)
         };
 
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(normalized));

@@ -141,6 +141,29 @@ html, body {
     font-size: 0.95rem;
 }
 
+.simple-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 14px;
+}
+
+.simple-toggle .simple-label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.simple-toggle input {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--accent);
+    flex: 0 0 auto;
+}
+
 .simple-actions,
 .simple-compose-row,
 .chat-topbar,

@@ -298,6 +298,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function maybeStartReceiverFromSettings() {
+        if (!settings.autoReceive || isListening) {
+            return;
+        }
+
+        rxBtn.disabled = true;
+
+        try {
+            await startReceiver();
+        } catch (error) {
+            setStatus(`Receiver error: ${error.message}`);
+        } finally {
+            rxBtn.disabled = false;
+        }
+    }
+
     async function sendMessage() {
         txBtn.disabled = true;
 
@@ -444,4 +460,5 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBandLabel();
     scrollTranscriptToBottom();
     setStatus('Loading modem...');
+    maybeStartReceiverFromSettings();
 });
