@@ -3,72 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonic Link v1.1</title>
+    <title>Sonic Link Cipher Chat</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/gh/ggerganov/ggwave/bindings/javascript/ggwave.js"></script>
     <style>
-        .glow { box-shadow: 0 0 20px rgba(34, 211, 238, 0.3); }
-        canvas { filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.5)); }
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top, rgba(45, 212, 191, 0.18), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.12), transparent 32%),
+                linear-gradient(180deg, #08111f 0%, #0f172a 48%, #08111f 100%);
+        }
+
+        .glow {
+            box-shadow: 0 0 32px rgba(45, 212, 191, 0.12);
+        }
+
+        .panel {
+            backdrop-filter: blur(18px);
+            background: rgba(15, 23, 42, 0.78);
+        }
+
+        .chat-scroll::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.9);
+            border-radius: 999px;
+        }
+
+        .chat-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .bubble-self {
+            background: linear-gradient(135deg, rgba(8, 145, 178, 0.92), rgba(21, 94, 117, 0.98));
+        }
+
+        .bubble-peer {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.98));
+        }
+
+        .bubble-locked {
+            background: linear-gradient(135deg, rgba(120, 53, 15, 0.94), rgba(69, 26, 3, 0.98));
+        }
+
+        .noise-grid {
+            background-image:
+                linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+            background-size: 18px 18px;
+        }
+
+        canvas {
+            filter: drop-shadow(0 0 12px rgba(34, 211, 238, 0.4));
+        }
     </style>
 </head>
-<body class="bg-[#0f172a] text-slate-200 min-h-screen flex flex-col items-center py-10 px-4 font-sans">
+<body class="text-slate-100 min-h-screen flex flex-col items-center py-8 px-4 font-sans">
+    <div class="pointer-events-none fixed inset-0 overflow-hidden">
+        <div class="absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl"></div>
+        <div class="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl"></div>
+    </div>
 
-    <header class="text-center mb-10">
-        <h1 class="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">SONIC LINK</h1>
-        <p class="text-slate-500 mt-2">Data transfer via near-ultrasonic sound</p>
+    <header class="relative z-10 text-center mb-8 max-w-3xl">
+        <div class="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.32em] text-cyan-200">
+            Air-Gapped Cipher Chat
+        </div>
+        <h1 class="mt-4 text-4xl md:text-5xl font-black tracking-[-0.08em] text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-200 to-emerald-300">
+            SONIC LINK
+        </h1>
+        <p class="mt-3 text-sm md:text-base text-slate-400">
+            Trade short messages over sound with callsigns, a live transcript, and an optional shared passphrase veil.
+        </p>
     </header>
 
-    <main class="w-full max-w-2xl grid gap-6">
-        <div class="bg-slate-800/50 border border-slate-700 rounded-3xl p-6 glow">
-            <div class="flex justify-between items-center mb-4 gap-4 flex-wrap">
-                <span class="text-xs font-bold uppercase tracking-widest text-slate-400">Spectrum Analyzer</span>
-                <span id="hzDisplay" class="text-xs font-mono text-cyan-400">0Hz - 24kHz</span>
-            </div>
-            <canvas id="visualizer" class="w-full h-32 bg-black/20 rounded-xl"></canvas>
-        </div>
-
-        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-6">
-            <label for="protocolSelect" class="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Protocol</label>
-            <select id="protocolSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-cyan-500 outline-none">
-                <option value="1">Audible Fast (best for testing)</option>
-                <option value="0">Audible Normal</option>
-                <option value="4">Ultrasound Fast</option>
-                <option value="3">Ultrasound Normal</option>
-            </select>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-6">
-            <section class="bg-slate-800 border border-slate-700 rounded-3xl p-6 flex flex-col">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <span class="w-2 h-2 bg-cyan-400 rounded-full"></span> Send
-                </h2>
-                <textarea id="txData" placeholder="Enter message to beam..." 
-                    class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-cyan-500 outline-none h-24 mb-4 resize-none">hello</textarea>
-                <button id="txBtn" onclick="onSend()" class="mt-auto bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl font-bold transition-all active:scale-95">
-                    Broadcast Pulse
-                </button>
-            </section>
-
-            <section class="bg-slate-800 border border-slate-700 rounded-3xl p-6 flex flex-col">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span> Receive
-                </h2>
-                <div id="rxOutput" class="bg-black/40 border border-slate-700 rounded-xl p-3 h-24 overflow-y-auto text-emerald-400 font-mono text-sm break-all mb-4">
-                    Waiting for signal...
+    <main class="relative z-10 w-full max-w-6xl grid gap-6">
+        <section class="grid xl:grid-cols-[1.15fr_0.85fr] gap-6">
+            <div class="panel glow border border-cyan-400/10 rounded-[28px] p-6 noise-grid">
+                <div class="flex justify-between items-center mb-4 gap-4 flex-wrap">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.28em] text-slate-400">Signal Scope</p>
+                        <p class="text-sm text-slate-500 mt-1">Monitor the band while sending and receiving.</p>
+                    </div>
+                    <span id="hzDisplay" class="text-xs font-mono rounded-full border border-slate-700 bg-slate-950/60 px-3 py-1 text-cyan-300">
+                        0Hz - 24.0kHz
+                    </span>
                 </div>
-                <button id="rxBtn" onclick="toggleReceiver()" class="mt-auto bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold transition-all">
-                    Start Listening
-                </button>
-            </section>
-        </div>
+                <canvas id="visualizer" class="w-full h-40 rounded-2xl bg-black/30"></canvas>
+            </div>
+
+            <div class="panel glow border border-emerald-400/10 rounded-[28px] p-6">
+                <div class="flex items-start justify-between gap-3 flex-wrap">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.28em] text-slate-400">Link Setup</p>
+                        <p class="text-sm text-slate-500 mt-1">Match the protocol and passphrase on both devices.</p>
+                    </div>
+                    <button id="clearBtn" class="rounded-full border border-slate-700 bg-slate-900/70 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800">
+                        Clear Transcript
+                    </button>
+                </div>
+
+                <div class="mt-5 grid sm:grid-cols-2 gap-4">
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Callsign</span>
+                        <input id="callsignInput" type="text" maxlength="20" placeholder="Ghost-407"
+                            class="w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20">
+                    </label>
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Shared Passphrase</span>
+                        <input id="secretInput" type="password" maxlength="40" placeholder="Same on both devices"
+                            class="w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20">
+                    </label>
+                </div>
+
+                <div class="mt-4 grid sm:grid-cols-2 gap-4">
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Protocol</span>
+                        <select id="protocolSelect"
+                            class="w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20">
+                            <option value="1">Audible Fast</option>
+                            <option value="0">Audible Normal</option>
+                            <option value="4">Ultrasound Fast</option>
+                            <option value="3">Ultrasound Normal</option>
+                        </select>
+                    </label>
+
+                    <label class="flex items-center justify-between gap-4 rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3">
+                        <div>
+                            <span class="block text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Cryptic Mode</span>
+                            <span class="block text-xs text-slate-500 mt-1">Obfuscates packets with the shared passphrase.</span>
+                        </div>
+                        <input id="crypticMode" type="checkbox" class="h-5 w-5 accent-emerald-400" checked>
+                    </label>
+                </div>
+
+                <div class="mt-5 flex flex-wrap gap-3">
+                    <button id="rxBtn" onclick="toggleReceiver()"
+                        class="rounded-2xl bg-emerald-500/90 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400">
+                        Start Listening
+                    </button>
+                    <div class="rounded-2xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-xs text-slate-400">
+                        Keep messages short. Audio chat is most reliable under 140 characters.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel glow border border-slate-700/70 rounded-[30px] overflow-hidden">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-800 px-5 py-4">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.28em] text-slate-400">Transcript</p>
+                    <p class="mt-1 text-sm text-slate-500">Outgoing messages appear on the right. Incoming packets arrive on the left.</p>
+                </div>
+                <span id="messageCount" class="rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1 text-xs font-mono text-cyan-200">
+                    0 packets
+                </span>
+            </div>
+
+            <div id="chatFeed" class="chat-scroll h-[420px] overflow-y-auto px-5 py-5 space-y-4">
+                <div id="emptyState" class="rounded-3xl border border-dashed border-slate-700 bg-slate-950/40 px-5 py-12 text-center text-slate-500">
+                    No packets yet. Start listening on one device, then send a short message from the other.
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800 bg-slate-950/30 px-5 py-5">
+                <label for="composeInput" class="mb-2 block text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Compose</label>
+                <textarea id="composeInput" maxlength="140" placeholder="Type a short whisper..."
+                    class="h-28 w-full resize-none rounded-3xl border border-slate-700 bg-slate-950/80 px-4 py-4 text-sm text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"></textarea>
+                <div class="mt-4 flex items-center justify-between gap-4 flex-wrap">
+                    <p id="composeHint" class="text-xs text-slate-500">
+                        Press Enter to transmit. Use Shift+Enter for a new line.
+                    </p>
+                    <button id="txBtn" onclick="onSend()"
+                        class="rounded-2xl bg-cyan-500 px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition hover:bg-cyan-400 active:scale-[0.98]">
+                        Send Pulse
+                    </button>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <footer id="status" class="mt-10 text-xs text-slate-600 font-mono uppercase tracking-widest text-center">
-        Engine Offline
+    <footer id="status" class="relative z-10 mt-8 text-center text-xs font-mono uppercase tracking-[0.28em] text-slate-500">
+        Loading modem...
     </footer>
 
     <script>
         window.AudioContext = window.AudioContext || window.webkitAudioContext;
+
+        const STORAGE_KEYS = {
+            callsign: 'sonic-link.callsign',
+            secret: 'sonic-link.secret',
+            protocol: 'sonic-link.protocol',
+            cryptic: 'sonic-link.cryptic'
+        };
 
         let ggwaveModule = null;
         let ggwaveInstance = null;
@@ -78,12 +210,22 @@
         let mediaSource = null;
         let recorder = null;
         let isListening = false;
+        let receiverRestartPending = false;
 
-        const txData = document.getElementById('txData');
+        const recentPackets = new Map();
+
+        const callsignInput = document.getElementById('callsignInput');
+        const secretInput = document.getElementById('secretInput');
         const protocolSelect = document.getElementById('protocolSelect');
-        const rxOutput = document.getElementById('rxOutput');
+        const crypticMode = document.getElementById('crypticMode');
+        const composeInput = document.getElementById('composeInput');
+        const chatFeed = document.getElementById('chatFeed');
+        const emptyState = document.getElementById('emptyState');
         const txBtn = document.getElementById('txBtn');
         const rxBtn = document.getElementById('rxBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const messageCount = document.getElementById('messageCount');
+        const hzDisplay = document.getElementById('hzDisplay');
 
         function setStatus(text) {
             document.getElementById('status').innerText = text;
@@ -95,13 +237,313 @@
             return new Type(buffer);
         }
 
+        function textToBytes(text) {
+            return new TextEncoder().encode(text);
+        }
+
+        function bytesToText(bytes) {
+            return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        }
+
+        function bytesToBase64(bytes) {
+            let binary = '';
+            const chunkSize = 0x8000;
+
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                const chunk = bytes.subarray(i, i + chunkSize);
+                binary += String.fromCharCode(...chunk);
+            }
+
+            return btoa(binary);
+        }
+
+        function base64ToBytes(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+
+            for (let i = 0; i < binary.length; i += 1) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+
+            return bytes;
+        }
+
+        function xorBytes(bytes, key) {
+            const keyBytes = textToBytes(key);
+            const out = new Uint8Array(bytes.length);
+
+            for (let i = 0; i < bytes.length; i += 1) {
+                out[i] = bytes[i] ^ keyBytes[i % keyBytes.length];
+            }
+
+            return out;
+        }
+
+        function encryptText(text, key) {
+            return bytesToBase64(xorBytes(textToBytes(text), key));
+        }
+
+        function decryptText(cipherText, key) {
+            return bytesToText(xorBytes(base64ToBytes(cipherText), key));
+        }
+
+        function makeNonce() {
+            const bytes = new Uint8Array(6);
+
+            if (window.crypto && window.crypto.getRandomValues) {
+                window.crypto.getRandomValues(bytes);
+            } else {
+                for (let i = 0; i < bytes.length; i += 1) {
+                    bytes[i] = Math.floor(Math.random() * 256);
+                }
+            }
+
+            return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+        }
+
+        function formatTime(timestamp) {
+            return new Date(timestamp).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function getCallsign() {
+            return (callsignInput.value || '').trim() || 'Ghost-Node';
+        }
+
+        function getSecret() {
+            return secretInput.value.trim();
+        }
+
+        function updateMessageCount() {
+            const count = chatFeed.querySelectorAll('[data-message-row]').length;
+            messageCount.textContent = `${count} ${count === 1 ? 'packet' : 'packets'}`;
+        }
+
+        function persistPreferences() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.callsign, callsignInput.value.trim());
+                localStorage.setItem(STORAGE_KEYS.secret, secretInput.value);
+                localStorage.setItem(STORAGE_KEYS.protocol, protocolSelect.value);
+                localStorage.setItem(STORAGE_KEYS.cryptic, crypticMode.checked ? '1' : '0');
+            } catch (error) {
+                console.warn('Could not persist preferences', error);
+            }
+        }
+
+        function loadPreferences() {
+            try {
+                const storedCallsign = localStorage.getItem(STORAGE_KEYS.callsign);
+                const storedSecret = localStorage.getItem(STORAGE_KEYS.secret);
+                const storedProtocol = localStorage.getItem(STORAGE_KEYS.protocol);
+                const storedCryptic = localStorage.getItem(STORAGE_KEYS.cryptic);
+
+                callsignInput.value = storedCallsign || `Ghost-${Math.floor(100 + Math.random() * 900)}`;
+                secretInput.value = storedSecret || '';
+                protocolSelect.value = storedProtocol || '1';
+                crypticMode.checked = storedCryptic !== '0';
+            } catch (error) {
+                callsignInput.value = `Ghost-${Math.floor(100 + Math.random() * 900)}`;
+                crypticMode.checked = true;
+            }
+        }
+
+        function updateBandLabel() {
+            const limit = ((audioCtx ? audioCtx.sampleRate : 48000) / 2000).toFixed(1);
+            hzDisplay.textContent = `0Hz - ${limit}kHz`;
+        }
+
+        function clearTranscript() {
+            chatFeed.innerHTML = '';
+            chatFeed.appendChild(emptyState);
+            emptyState.hidden = false;
+            updateMessageCount();
+            setStatus('Transcript cleared');
+        }
+
+        function markPacketSeen(signature) {
+            const now = Date.now();
+
+            for (const [key, time] of recentPackets.entries()) {
+                if (now - time > 8000) {
+                    recentPackets.delete(key);
+                }
+            }
+
+            if (recentPackets.has(signature)) {
+                return true;
+            }
+
+            recentPackets.set(signature, now);
+            return false;
+        }
+
+        function renderMessage(message, direction) {
+            emptyState.hidden = true;
+
+            const row = document.createElement('div');
+            row.dataset.messageRow = 'true';
+            row.className = `flex ${direction === 'outgoing' ? 'justify-end' : 'justify-start'}`;
+
+            const bubble = document.createElement('article');
+            bubble.className = [
+                'max-w-[85%] rounded-[24px] border px-4 py-3 shadow-lg',
+                direction === 'outgoing'
+                    ? 'bubble-self border-cyan-300/20 text-white'
+                    : message.locked
+                        ? 'bubble-locked border-amber-300/20 text-amber-50'
+                        : 'bubble-peer border-slate-700 text-slate-100'
+            ].join(' ');
+
+            const meta = document.createElement('div');
+            meta.className = 'mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/60';
+            meta.textContent = `${direction === 'outgoing' ? 'You' : message.from} • ${formatTime(message.ts)} • ${message.modeLabel}`;
+
+            const body = document.createElement('div');
+            body.className = `whitespace-pre-wrap break-words text-sm leading-6 ${message.locked ? 'italic' : ''}`;
+            body.textContent = message.text;
+
+            bubble.append(meta, body);
+            row.appendChild(bubble);
+            chatFeed.appendChild(row);
+            chatFeed.scrollTop = chatFeed.scrollHeight;
+            updateMessageCount();
+        }
+
+        function buildTransmission(text) {
+            const packet = {
+                app: 'sonic-chat',
+                v: 1,
+                from: getCallsign(),
+                text,
+                ts: Date.now(),
+                nonce: makeNonce()
+            };
+
+            const inner = JSON.stringify(packet);
+
+            if (crypticMode.checked) {
+                const secret = getSecret();
+
+                if (!secret) {
+                    throw new Error('Add the same shared passphrase on both devices for cryptic mode');
+                }
+
+                return JSON.stringify({
+                    app: 'sonic-chat',
+                    v: 1,
+                    mode: 'xor-b64',
+                    body: encryptText(inner, secret)
+                });
+            }
+
+            return JSON.stringify({
+                app: 'sonic-chat',
+                v: 1,
+                mode: 'plain',
+                body: inner
+            });
+        }
+
+        function unpackTransmission(rawText) {
+            let envelope = null;
+
+            try {
+                envelope = JSON.parse(rawText);
+            } catch (error) {
+                return {
+                    from: 'Open Signal',
+                    text: rawText,
+                    ts: Date.now(),
+                    modeLabel: 'Raw',
+                    signature: rawText,
+                    locked: false
+                };
+            }
+
+            if (!envelope || envelope.app !== 'sonic-chat' || envelope.v !== 1 || typeof envelope.body !== 'string') {
+                return {
+                    from: 'Open Signal',
+                    text: rawText,
+                    ts: Date.now(),
+                    modeLabel: 'Raw',
+                    signature: rawText,
+                    locked: false
+                };
+            }
+
+            let payloadText = envelope.body;
+
+            if (envelope.mode === 'xor-b64') {
+                const secret = getSecret();
+
+                if (!secret) {
+                    return {
+                        from: 'Encrypted Signal',
+                        text: 'Locked packet received. Enter the shared passphrase used by the sender to decode it.',
+                        ts: Date.now(),
+                        modeLabel: 'Locked',
+                        signature: rawText,
+                        locked: true
+                    };
+                }
+
+                try {
+                    payloadText = decryptText(envelope.body, secret);
+                } catch (error) {
+                    return {
+                        from: 'Encrypted Signal',
+                        text: 'Passphrase mismatch. Use the same shared key on both devices.',
+                        ts: Date.now(),
+                        modeLabel: 'Locked',
+                        signature: rawText,
+                        locked: true
+                    };
+                }
+            }
+
+            try {
+                const payload = JSON.parse(payloadText);
+
+                return {
+                    from: payload.from || 'Unknown',
+                    text: payload.text || '',
+                    ts: payload.ts || Date.now(),
+                    modeLabel: envelope.mode === 'xor-b64' ? 'Cryptic' : 'Open',
+                    signature: `${payload.nonce || payload.ts || rawText}:${payload.from || ''}`,
+                    locked: false
+                };
+            } catch (error) {
+                return {
+                    from: 'Open Signal',
+                    text: rawText,
+                    ts: Date.now(),
+                    modeLabel: 'Raw',
+                    signature: rawText,
+                    locked: false
+                };
+            }
+        }
+
+        function handleDecodedTransmission(rawText) {
+            const message = unpackTransmission(rawText);
+
+            if (markPacketSeen(message.signature)) {
+                return;
+            }
+
+            renderMessage(message, 'incoming');
+            setStatus(message.locked ? 'Locked packet received' : `Packet received from ${message.from}`);
+        }
+
         const ggwaveReady = ggwave_factory({
             locateFile: (path) => path.endsWith('.wasm')
                 ? 'https://cdn.jsdelivr.net/gh/ggerganov/ggwave/bindings/javascript/ggwave.wasm'
                 : path
         }).then((obj) => {
             ggwaveModule = obj;
-            setStatus('Tap Send or Start Listening to initialize audio');
+            setStatus('Tap Send Pulse or Start Listening to initialize audio');
         }).catch((error) => {
             setStatus(`Engine load failed: ${error.message}`);
             throw error;
@@ -115,6 +557,7 @@
                 analyser = audioCtx.createAnalyser();
                 analyser.fftSize = 2048;
                 analyser.smoothingTimeConstant = 0.75;
+                updateBandLabel();
                 drawSpectrum();
             }
 
@@ -129,96 +572,50 @@
                 ggwaveInstance = ggwaveModule.init(parameters);
             }
 
-            setStatus(`Engine Ready @ ${audioCtx.sampleRate} Hz`);
+            updateBandLabel();
+            setStatus(`Engine ready @ ${audioCtx.sampleRate} Hz`);
         }
 
-        async function onSend() {
-            txBtn.disabled = true;
+        async function startReceiver() {
+            if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Mic capture needs HTTPS or localhost');
+            }
 
-            try {
-                await initEngine();
+            await initEngine();
 
-                const text = txData.value.trim();
-                if (!text) {
-                    setStatus('Enter a short message first');
-                    return;
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: false,
+                    autoGainControl: false,
+                    noiseSuppression: false
                 }
+            });
 
-                const protocolId = parseInt(protocolSelect.value, 10);
-                const waveform = ggwaveModule.encode(ggwaveInstance, text, protocolId, 10);
-                const samples = convertTypedArray(waveform, Float32Array);
-                const buffer = audioCtx.createBuffer(1, samples.length, audioCtx.sampleRate);
-                buffer.getChannelData(0).set(samples);
+            mediaSource = audioCtx.createMediaStreamSource(mediaStream);
+            recorder = audioCtx.createScriptProcessor(1024, 1, 1);
 
-                const source = audioCtx.createBufferSource();
-                source.buffer = buffer;
-                source.connect(audioCtx.destination);
-                source.connect(analyser);
-                source.start(0);
+            recorder.onaudioprocess = (event) => {
+                const channelData = event.inputBuffer.getChannelData(0);
+                const input = convertTypedArray(new Float32Array(channelData), Int8Array);
+                const result = ggwaveModule.decode(ggwaveInstance, input);
 
-                setStatus(`Broadcasting with protocol ${protocolId}...`);
-                source.onended = () => setStatus('Pulse sent');
-            } catch (error) {
-                setStatus(`Send failed: ${error.message}`);
-            } finally {
-                txBtn.disabled = false;
-            }
+                if (result && result.length > 0) {
+                    handleDecodedTransmission(new TextDecoder('utf-8').decode(result));
+                }
+            };
+
+            mediaSource.connect(analyser);
+            mediaSource.connect(recorder);
+            recorder.connect(audioCtx.destination);
+
+            isListening = true;
+            rxBtn.innerText = 'Stop Listening';
+            rxBtn.classList.remove('bg-emerald-500/90', 'hover:bg-emerald-400');
+            rxBtn.classList.add('bg-rose-500/90', 'text-white', 'hover:bg-rose-400');
+            setStatus('Listening for signal...');
         }
 
-        async function toggleReceiver() {
-            if (isListening) {
-                stopReceiver();
-                return;
-            }
-
-            if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-                setStatus('Mic capture needs HTTPS or localhost');
-                return;
-            }
-
-            rxBtn.disabled = true;
-
-            try {
-                await initEngine();
-
-                mediaStream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: false,
-                        autoGainControl: false,
-                        noiseSuppression: false
-                    }
-                });
-
-                mediaSource = audioCtx.createMediaStreamSource(mediaStream);
-                recorder = audioCtx.createScriptProcessor(1024, 1, 1);
-
-                recorder.onaudioprocess = (event) => {
-                    const channelData = event.inputBuffer.getChannelData(0);
-                    const input = convertTypedArray(new Float32Array(channelData), Int8Array);
-                    const result = ggwaveModule.decode(ggwaveInstance, input);
-
-                    if (result && result.length > 0) {
-                        addMessage(new TextDecoder('utf-8').decode(result));
-                    }
-                };
-
-                mediaSource.connect(analyser);
-                mediaSource.connect(recorder);
-                recorder.connect(audioCtx.destination);
-
-                isListening = true;
-                rxBtn.innerText = 'Stop Listening';
-                rxBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
-                rxBtn.classList.add('bg-red-600', 'hover:bg-red-500');
-                setStatus('Listening for signal...');
-            } catch (error) {
-                setStatus(`Mic error: ${error.message}`);
-            } finally {
-                rxBtn.disabled = false;
-            }
-        }
-
-        function stopReceiver() {
+        function stopReceiver(options = {}) {
             if (recorder) {
                 recorder.disconnect();
                 recorder.onaudioprocess = null;
@@ -237,20 +634,92 @@
 
             isListening = false;
             rxBtn.innerText = 'Start Listening';
-            rxBtn.classList.remove('bg-red-600', 'hover:bg-red-500');
-            rxBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
-            setStatus('Receiver stopped');
+            rxBtn.classList.remove('bg-rose-500/90', 'text-white', 'hover:bg-rose-400');
+            rxBtn.classList.add('bg-emerald-500/90', 'hover:bg-emerald-400');
+
+            if (!options.silent) {
+                setStatus('Receiver stopped');
+            }
         }
 
-        function addMessage(text) {
-            if (rxOutput.innerText.includes('Waiting for signal...')) {
-                rxOutput.textContent = '';
-            }
+        async function toggleReceiver() {
+            rxBtn.disabled = true;
 
-            const row = document.createElement('div');
-            row.className = 'mb-1 border-b border-white/5 pb-1';
-            row.textContent = `> ${text}`;
-            rxOutput.prepend(row);
+            try {
+                if (isListening) {
+                    stopReceiver();
+                } else {
+                    await startReceiver();
+                }
+            } catch (error) {
+                setStatus(`Receiver error: ${error.message}`);
+            } finally {
+                rxBtn.disabled = false;
+            }
+        }
+
+        async function onSend() {
+            txBtn.disabled = true;
+
+            try {
+                await initEngine();
+
+                const messageText = composeInput.value.trim();
+                if (!messageText) {
+                    setStatus('Type a short message first');
+                    return;
+                }
+
+                if (messageText.length > 140) {
+                    setStatus('Keep messages under 140 characters for reliable delivery');
+                    return;
+                }
+
+                const protocolId = parseInt(protocolSelect.value, 10);
+                const rawTransmission = buildTransmission(messageText);
+                const localPreview = unpackTransmission(rawTransmission);
+
+                renderMessage(localPreview, 'outgoing');
+
+                if (isListening) {
+                    receiverRestartPending = true;
+                    stopReceiver({ silent: true });
+                }
+
+                const waveform = ggwaveModule.encode(ggwaveInstance, rawTransmission, protocolId, 10);
+                const samples = convertTypedArray(waveform, Float32Array);
+                const buffer = audioCtx.createBuffer(1, samples.length, audioCtx.sampleRate);
+                buffer.getChannelData(0).set(samples);
+
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                source.connect(analyser);
+                source.start(0);
+
+                composeInput.value = '';
+                setStatus(`Broadcasting with protocol ${protocolId}...`);
+
+                source.onended = async () => {
+                    if (receiverRestartPending) {
+                        receiverRestartPending = false;
+
+                        try {
+                            await startReceiver();
+                            setStatus('Pulse sent. Receiver re-armed.');
+                        } catch (error) {
+                            setStatus(`Pulse sent, but receiver restart failed: ${error.message}`);
+                        }
+                    } else {
+                        setStatus('Pulse sent');
+                    }
+                };
+            } catch (error) {
+                receiverRestartPending = false;
+                setStatus(`Send failed: ${error.message}`);
+            } finally {
+                txBtn.disabled = false;
+            }
         }
 
         function drawSpectrum() {
@@ -260,7 +729,9 @@
             function render() {
                 requestAnimationFrame(render);
 
-                if (!analyser) return;
+                if (!analyser) {
+                    return;
+                }
 
                 const width = Math.max(1, Math.floor(canvas.clientWidth));
                 const height = Math.max(1, Math.floor(canvas.clientHeight));
@@ -275,15 +746,15 @@
                 analyser.getByteFrequencyData(dataArray);
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                const barWidth = (canvas.width / bufferLength) * 2.5;
+                const barWidth = (canvas.width / bufferLength) * 2.4;
                 let x = 0;
 
-                for (let i = 0; i < bufferLength; i++) {
+                for (let i = 0; i < bufferLength; i += 1) {
                     const barHeight = (dataArray[i] / 255) * canvas.height;
                     const r = 34;
-                    const g = i > bufferLength * 0.7 ? 211 : 100;
+                    const g = i > bufferLength * 0.72 ? 211 : 100 + Math.round(dataArray[i] / 7);
                     const b = 238;
-                    ctx.fillStyle = `rgb(${r},${g},${b})`;
+                    ctx.fillStyle = `rgb(${r}, ${Math.min(255, g)}, ${b})`;
                     ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
                     x += barWidth + 1;
                 }
@@ -292,6 +763,23 @@
             render();
         }
 
+        composeInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                onSend();
+            }
+        });
+
+        [callsignInput, secretInput, protocolSelect, crypticMode].forEach((element) => {
+            element.addEventListener('input', persistPreferences);
+            element.addEventListener('change', persistPreferences);
+        });
+
+        clearBtn.addEventListener('click', clearTranscript);
+
+        loadPreferences();
+        updateBandLabel();
+        updateMessageCount();
         setStatus('Loading modem...');
     </script>
 </body>
