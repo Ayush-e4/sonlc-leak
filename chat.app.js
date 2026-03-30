@@ -20,9 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const txBtn = document.getElementById('txBtn');
     const rxBtn = document.getElementById('rxBtn');
     const clearBtn = document.getElementById('clearBtn');
+    const focusChatBtn = document.getElementById('focusChatBtn');
     const statusEl = document.getElementById('status');
 
-    if (!callsignBadge || !protocolBadge || !modeBadge || !byteMeter || !hzDisplay || !receiverHint || !messageCount || !chatFeed || !emptyState || !composeInput || !composeHint || !txBtn || !rxBtn || !clearBtn || !statusEl) {
+    if (!callsignBadge || !protocolBadge || !modeBadge || !byteMeter || !hzDisplay || !receiverHint || !messageCount || !chatFeed || !emptyState || !composeInput || !composeHint || !txBtn || !rxBtn || !clearBtn || !focusChatBtn || !statusEl) {
         return;
     }
 
@@ -83,6 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(() => {
             chatFeed.scrollTop = chatFeed.scrollHeight;
         });
+    }
+
+    function setFocusMode(enabled) {
+        document.body.classList.toggle('chat-focus-mode', enabled);
+        focusChatBtn.textContent = enabled ? 'Exit Full View' : 'Expand';
+        scrollTranscriptToBottom();
     }
 
     function clearTranscript() {
@@ -395,6 +402,9 @@ document.addEventListener('DOMContentLoaded', () => {
     txBtn.addEventListener('click', sendMessage);
     rxBtn.addEventListener('click', toggleReceiver);
     clearBtn.addEventListener('click', clearTranscript);
+    focusChatBtn.addEventListener('click', () => {
+        setFocusMode(!document.body.classList.contains('chat-focus-mode'));
+    });
 
     applySettings();
     updateMessageCount();
