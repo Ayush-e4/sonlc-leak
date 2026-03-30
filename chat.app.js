@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearBtn = document.getElementById('clearBtn');
     const focusChatBtn = document.getElementById('focusChatBtn');
     const statusEl = document.getElementById('status');
+    const mobileQuery = window.matchMedia('(max-width: 760px)');
 
     if (!callsignBadge || !protocolBadge || !modeBadge || !byteMeter || !hzDisplay || !receiverHint || !messageCount || !chatFeed || !emptyState || !composeInput || !composeHint || !txBtn || !rxBtn || !clearBtn || !focusChatBtn || !statusEl) {
         return;
@@ -87,9 +88,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setFocusMode(enabled) {
+        if (mobileQuery.matches) {
+            document.body.classList.toggle('mobile-chat-controls-visible', enabled);
+            updateFocusButtonLabel();
+            scrollTranscriptToBottom();
+            return;
+        }
+
         document.body.classList.toggle('chat-focus-mode', enabled);
-        focusChatBtn.textContent = enabled ? 'Exit Full View' : 'Expand';
+        updateFocusButtonLabel();
         scrollTranscriptToBottom();
+    }
+
+    function syncMobileLayout() {
+        document.body.classList.toggle('mobile-chat-layout', mobileQuery.matches);
+        if (!mobileQuery.matches) {
+            document.body.classList.remove('mobile-chat-controls-visible');
+        }
+        updateFocusButtonLabel();
+        scrollTranscriptToBottom();
+    }
+
+    function updateFocusButtonLabel() {
+        if (mobileQuery.matches) {
+            focusChatBtn.textContent = document.body.classList.contains('mobile-chat-controls-visible') ? 'Full View' : 'Show Controls';
+            return;
+        }
+
+        focusChatBtn.textContent = document.body.classList.contains('chat-focus-mode') ? 'Exit Full View' : 'Expand';
     }
 
     function clearTranscript() {
@@ -398,15 +424,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     composeInput.addEventListener('focus', scrollTranscriptToBottom);
     window.addEventListener('resize', scrollTranscriptToBottom);
+    mobileQuery.addEventListener('change', syncMobileLayout);
 
     txBtn.addEventListener('click', sendMessage);
     rxBtn.addEventListener('click', toggleReceiver);
     clearBtn.addEventListener('click', clearTranscript);
     focusChatBtn.addEventListener('click', () => {
+        if (mobileQuery.matches) {
+            setFocusMode(!document.body.classList.contains('mobile-chat-controls-visible'));
+            return;
+        }
+
         setFocusMode(!document.body.classList.contains('chat-focus-mode'));
     });
 
     applySettings();
+    syncMobileLayout();
     updateMessageCount();
     updateBandLabel();
     scrollTranscriptToBottom();

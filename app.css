@@ -285,6 +285,8 @@ html, body {
     min-height: 0;
     max-height: none;
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -346,7 +348,21 @@ html, body {
     display: none;
 }
 
+.mobile-chat-layout:not(.mobile-chat-controls-visible) .chat-topbar,
+.mobile-chat-layout:not(.mobile-chat-controls-visible) .chat-info-row,
+.mobile-chat-layout:not(.mobile-chat-controls-visible) .chat-side,
+.mobile-chat-layout:not(.mobile-chat-controls-visible) .center-status {
+    display: none;
+}
+
 .chat-focus-mode .chat-page {
+    grid-template-rows: 1fr;
+    width: 100%;
+    max-width: none;
+    padding: 0;
+}
+
+.mobile-chat-layout:not(.mobile-chat-controls-visible) .chat-page {
     grid-template-rows: 1fr;
     width: 100%;
     max-width: none;
@@ -358,7 +374,22 @@ html, body {
     gap: 0;
 }
 
+.mobile-chat-layout:not(.mobile-chat-controls-visible) .chat-shell {
+    grid-template-columns: 1fr;
+    gap: 0;
+}
+
 .chat-focus-mode .chat-card {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    height: 100dvh;
+    min-height: 100dvh;
+    padding: 14px;
+}
+
+.mobile-chat-layout:not(.mobile-chat-controls-visible) .chat-card {
     border-radius: 0;
     border-left: 0;
     border-right: 0;
@@ -426,6 +457,30 @@ html, body {
         order: 1;
         min-height: 0;
         height: 100%;
+    }
+
+    .mobile-chat-layout:not(.mobile-chat-controls-visible).chat-screen,
+    .mobile-chat-layout:not(.mobile-chat-controls-visible) {
+        overflow: hidden;
+    }
+
+    .mobile-chat-layout:not(.mobile-chat-controls-visible) .chat-page,
+    .mobile-chat-layout:not(.mobile-chat-controls-visible) .chat-shell,
+    .mobile-chat-layout:not(.mobile-chat-controls-visible) .chat-card {
+        min-height: 100dvh;
+        height: 100dvh;
+    }
+
+    .mobile-chat-layout:not(.mobile-chat-controls-visible) .chat-header-row {
+        align-items: center;
+    }
+
+    .mobile-chat-layout:not(.mobile-chat-controls-visible) .chat-head-actions {
+        width: auto;
+    }
+
+    .mobile-chat-layout:not(.mobile-chat-controls-visible) .simple-composer {
+        padding-bottom: max(0px, env(safe-area-inset-bottom));
     }
 
     .bubble {
