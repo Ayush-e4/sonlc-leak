@@ -79,6 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
         messageCount.textContent = `${count} ${count === 1 ? 'packet' : 'packets'}`;
     }
 
+    function scrollTranscriptToBottom() {
+        requestAnimationFrame(() => {
+            chatFeed.scrollTop = chatFeed.scrollHeight;
+        });
+    }
+
     function clearTranscript() {
         chatFeed.innerHTML = '';
         chatFeed.appendChild(emptyState);
@@ -125,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bubble.append(meta, body);
         row.appendChild(bubble);
         chatFeed.appendChild(row);
-        chatFeed.scrollTop = chatFeed.scrollHeight;
+        scrollTranscriptToBottom();
         updateMessageCount();
     }
 
@@ -383,6 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
             sendMessage();
         }
     });
+    composeInput.addEventListener('focus', scrollTranscriptToBottom);
+    window.addEventListener('resize', scrollTranscriptToBottom);
 
     txBtn.addEventListener('click', sendMessage);
     rxBtn.addEventListener('click', toggleReceiver);
@@ -391,5 +399,6 @@ document.addEventListener('DOMContentLoaded', () => {
     applySettings();
     updateMessageCount();
     updateBandLabel();
+    scrollTranscriptToBottom();
     setStatus('Loading modem...');
 });
