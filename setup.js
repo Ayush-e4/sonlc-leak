@@ -1,8 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const callsignInput = document.getElementById('callsignInput');
     const protocolSelect = document.getElementById('protocolSelect');
-    const secretInput = document.getElementById('secretInput');
-    const crypticMode = document.getElementById('crypticMode');
     const setupForm = document.getElementById('setupForm');
     const resetBtn = document.getElementById('resetBtn');
     const setupStatus = document.getElementById('setupStatus');
@@ -12,26 +10,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function readForm() {
         return {
             callsign: callsignInput.value,
-            protocol: protocolSelect.value,
-            cryptic: crypticMode.checked,
-            secret: secretInput.value
+            protocol: protocolSelect.value
         };
     }
 
     function applySettings(settings) {
         callsignInput.value = settings.callsign;
         protocolSelect.value = settings.protocol;
-        crypticMode.checked = settings.cryptic;
-        secretInput.value = settings.secret;
         renderSummary();
     }
 
     function renderSummary() {
         const settings = readForm();
-        const modeText = settings.cryptic ? 'Cryptic packets leave less room for message text.' : 'Open packets leave the most room for message text.';
         summaryBudget.textContent = `${window.SonicLink.MAX_PACKET_BYTES} byte radio budget`;
-        budgetNote.textContent = `The modem can only carry ${window.SonicLink.MAX_PACKET_BYTES} bytes per packet. ${modeText}`;
-        setupStatus.textContent = `Current profile: ${settings.callsign || 'Ghost'} • ${window.SonicLink.getProtocolLabel(settings.protocol)} • ${settings.cryptic ? 'Cryptic' : 'Open'} mode`;
+        budgetNote.textContent = `The modem can only carry ${window.SonicLink.MAX_PACKET_BYTES} bytes per packet. Short open packets travel best.`;
+        setupStatus.textContent = `Current profile: ${settings.callsign || 'Ghost'} • ${window.SonicLink.getProtocolLabel(settings.protocol)}`;
     }
 
     function persist() {
@@ -41,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     applySettings(window.SonicLink.loadSettings());
 
-    [callsignInput, protocolSelect, secretInput, crypticMode].forEach((element) => {
+    [callsignInput, protocolSelect].forEach((element) => {
         element.addEventListener('input', persist);
         element.addEventListener('change', persist);
     });

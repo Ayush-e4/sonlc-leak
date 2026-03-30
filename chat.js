@@ -49,10 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
         settings = window.SonicLink.loadSettings();
         callsignBadge.textContent = settings.callsign;
         protocolBadge.textContent = window.SonicLink.getProtocolLabel(settings.protocol);
-        modeBadge.textContent = settings.cryptic ? 'Cryptic' : 'Open';
-        composeHint.textContent = settings.cryptic
-            ? 'Cryptic mode uses more bytes. Keep the text compact for better reliability.'
-            : 'Open mode leaves more space. Shorter messages still travel better.';
+        modeBadge.textContent = 'Open Chat';
+        composeHint.textContent = 'Shorter messages travel better and leave more room under the packet limit.';
         updateDraftMeter();
     }
 
@@ -200,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (!markPacketSeen(message.signature)) {
                     renderMessage(message, 'incoming');
-                    setStatus(message.locked ? 'Locked packet received' : `Packet received from ${message.from}`);
+                    setStatus(`Packet received from ${message.from}`);
                 }
             }
         };
