@@ -16,6 +16,10 @@
         }
     }
 
+    function textToBytes(text) {
+        return new TextEncoder().encode(text);
+    }
+
     function makeNonce() {
         const bytes = new Uint8Array(4);
 
