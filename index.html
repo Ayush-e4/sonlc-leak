@@ -263,9 +263,8 @@
             render();
         }
 
-        initEngine().catch((error) => {
-            setStatus(`Engine Error: ${error.message}`);
-        });
+
+        setStatus('Tap Send or Start Listening to initialize audio');
     </script>
 </body>
 </html>
