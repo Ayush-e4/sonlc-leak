@@ -17,6 +17,7 @@
 html, body {
     margin: 0;
     min-height: 100%;
+    height: 100%;
     font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: var(--bg);
     color: var(--text);
@@ -26,6 +27,10 @@ html, body {
     background:
         radial-gradient(circle at top, rgba(39, 194, 243, 0.08), transparent 28%),
         linear-gradient(180deg, #10192b 0%, #0b1220 100%);
+}
+
+.chat-screen {
+    overflow: hidden;
 }
 
 .landing,
@@ -43,6 +48,10 @@ html, body {
 }
 
 .landing-copy {
+    max-width: 560px;
+}
+
+.landing-card {
     max-width: 560px;
 }
 
@@ -81,6 +90,7 @@ html, body {
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 18px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
 }
 
 .simple-form,
@@ -118,6 +128,11 @@ html, body {
     padding: 14px;
 }
 
+.compact-note strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
 .simple-note p,
 .simple-status {
     margin: 0;
@@ -149,6 +164,7 @@ html, body {
     font: inherit;
     font-weight: 700;
     cursor: pointer;
+    transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, opacity 0.16s ease;
 }
 
 .primary-btn {
@@ -168,6 +184,11 @@ html, body {
     cursor: wait;
 }
 
+.primary-btn:hover:not(:disabled),
+.secondary-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
 .link-btn {
     text-decoration: none;
     display: inline-flex;
@@ -176,11 +197,23 @@ html, body {
 
 .chat-page {
     display: grid;
+    grid-template-rows: auto auto 1fr auto;
     gap: 16px;
+    min-height: 100svh;
+    height: 100svh;
+    overflow: hidden;
 }
 
 .chat-info-row {
     gap: 10px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+}
+
+.chat-info-row::-webkit-scrollbar {
+    display: none;
 }
 
 .info-pill,
@@ -192,6 +225,7 @@ html, body {
     padding: 10px 12px;
     color: var(--muted);
     font-size: 0.9rem;
+    flex: 0 0 auto;
 }
 
 .info-pill strong,
@@ -204,10 +238,17 @@ html, body {
     display: grid;
     grid-template-columns: 280px minmax(0, 1fr);
     gap: 16px;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .side-card {
     gap: 12px;
+}
+
+.chat-brand {
+    display: grid;
+    gap: 2px;
 }
 
 .simple-visualizer {
@@ -219,16 +260,19 @@ html, body {
 
 .chat-card {
     display: grid;
+    grid-template-rows: auto 1fr auto;
     gap: 16px;
+    min-height: 0;
 }
 
 .simple-chat-feed {
-    min-height: 380px;
-    max-height: 58vh;
+    min-height: 0;
+    max-height: none;
     overflow: auto;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-right: 4px;
 }
 
 .simple-empty {
@@ -253,6 +297,7 @@ html, body {
     border: 1px solid var(--border);
     border-radius: 18px;
     padding: 12px 14px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
 }
 
 .bubble-self {
@@ -279,8 +324,19 @@ html, body {
 }
 
 @media (max-width: 760px) {
+    .landing,
+    .chat-page {
+        width: min(100% - 16px, 980px);
+    }
+
+    .chat-page {
+        padding: 12px 0;
+        gap: 10px;
+    }
+
     .chat-shell {
         grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
     }
 
     .chat-topbar,
@@ -296,12 +352,48 @@ html, body {
         width: 100%;
     }
 
+    .chat-side {
+        grid-template-columns: 1fr 1fr;
+        align-items: stretch;
+    }
+
     .bubble {
         max-width: 100%;
     }
 
     .simple-chat-feed {
-        min-height: 300px;
-        max-height: none;
+        min-height: 0;
+    }
+
+    .simple-visualizer {
+        height: 96px;
+    }
+
+    .simple-card {
+        border-radius: 18px;
+        padding: 16px;
+    }
+}
+
+@media (max-width: 560px) {
+    .landing {
+        padding: 24px 0;
+        align-content: start;
+    }
+
+    .chat-side {
+        grid-template-columns: 1fr;
+    }
+
+    .landing-title {
+        font-size: clamp(2.4rem, 12vw, 3.6rem);
+    }
+
+    .chat-title {
+        font-size: 1.8rem;
+    }
+
+    .simple-textarea {
+        min-height: 88px;
     }
 }

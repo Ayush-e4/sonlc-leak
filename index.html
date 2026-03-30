@@ -15,22 +15,22 @@
 <body class="simple-body">
     <main class="landing">
         <section class="landing-copy">
-            <p class="mini-label">Sonic Link</p>
-            <h1 class="landing-title">Chat through sound.</h1>
+            <p class="mini-label">Open Source Audio Chat</p>
+            <h1 class="landing-title">Sonic Link</h1>
             <p class="landing-text">
-                Pick a name, choose the audio mode, and jump into a simple chat screen.
+                A lightweight nearby messenger that sends short text over sound.
             </p>
         </section>
 
-        <section class="simple-card">
+        <section class="simple-card landing-card">
             <form id="setupForm" class="simple-form">
                 <label class="simple-field">
-                    <span class="simple-label">Your name</span>
+                    <span class="simple-label">Display Name</span>
                     <input id="callsignInput" class="simple-input" type="text" maxlength="16" placeholder="Ghost-407">
                 </label>
 
                 <label class="simple-field">
-                    <span class="simple-label">Audio mode</span>
+                    <span class="simple-label">Transmission Mode</span>
                     <select id="protocolSelect" class="simple-input">
                         <option value="1">Audible Fast</option>
                         <option value="0">Audible Normal</option>
@@ -39,18 +39,18 @@
                     </select>
                 </label>
 
-                <div class="simple-note">
-                    <strong id="summaryBudget">140 byte radio budget</strong>
-                    <p id="budgetNote">Keep messages short so the modem can send them cleanly.</p>
+                <div class="simple-note compact-note">
+                    <strong id="summaryBudget">140-byte packet limit</strong>
+                    <p id="budgetNote">Short messages transmit more reliably.</p>
                 </div>
 
                 <div class="simple-actions">
-                    <button type="submit" class="primary-btn">Start Chat</button>
+                    <button type="submit" class="primary-btn">Continue</button>
                     <button id="resetBtn" type="button" class="secondary-btn">Reset</button>
                 </div>
             </form>
 
-            <p id="setupStatus" class="simple-status">Settings are saved on this device.</p>
+            <p id="setupStatus" class="simple-status">Saved locally on this device.</p>
         </section>
     </main>
 </body>

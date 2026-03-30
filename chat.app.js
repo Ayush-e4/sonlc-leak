@@ -53,8 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
         settings = window.SonicLink.loadSettings();
         callsignBadge.textContent = settings.callsign;
         protocolBadge.textContent = window.SonicLink.getProtocolLabel(settings.protocol);
-        modeBadge.textContent = 'Open Chat';
-        composeHint.textContent = 'Shorter messages travel better and leave more room under the packet limit.';
+        modeBadge.textContent = 'Live Channel';
+        composeHint.textContent = 'Press Enter to transmit.';
         updateDraftMeter();
     }
 
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatFeed.appendChild(emptyState);
         emptyState.hidden = false;
         updateMessageCount();
-        setStatus('Transcript cleared');
+        setStatus('Chat cleared');
     }
 
     function markPacketSeen(signature) {
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
             : path
     }).then((obj) => {
         ggwaveModule = obj;
-        setStatus('Tap Send Pulse or Start Listening to initialize audio');
+        setStatus('Ready');
     }).catch((error) => {
         setStatus(`Engine load failed: ${error.message}`);
         throw error;
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateBandLabel();
-        setStatus(`Engine ready @ ${audioCtx.sampleRate} Hz`);
+        setStatus(`Audio ready @ ${audioCtx.sampleRate} Hz`);
     }
 
     async function startReceiver() {
@@ -212,9 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
         recorder.connect(audioCtx.destination);
 
         isListening = true;
-        rxBtn.textContent = 'Stop Listening';
-        receiverHint.textContent = 'Receiver live. Keep the speaker close and the room quiet for cleaner decodes.';
-        setStatus('Listening for signal...');
+        rxBtn.textContent = 'Disable Receiver';
+        receiverHint.textContent = 'Receiver active.';
+        setStatus('Receiver active');
     }
 
     function stopReceiver(options = {}) {
@@ -235,11 +235,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         isListening = false;
-        rxBtn.textContent = 'Start Listening';
-        receiverHint.textContent = 'Keep this page open and the mic permission allowed while listening.';
+        rxBtn.textContent = 'Enable Receiver';
+        receiverHint.textContent = 'Receiver idle.';
 
         if (!options.silent) {
-            setStatus('Receiver stopped');
+            setStatus('Receiver idle');
         }
     }
 

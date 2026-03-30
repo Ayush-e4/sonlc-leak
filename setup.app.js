@@ -26,8 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderSummary() {
         const settings = readForm();
-        summaryBudget.textContent = `${window.SonicLink.MAX_PACKET_BYTES} byte radio budget`;
-        budgetNote.textContent = `The modem can only carry ${window.SonicLink.MAX_PACKET_BYTES} bytes per packet. Short open packets travel best.`;
+        summaryBudget.textContent = `${window.SonicLink.MAX_PACKET_BYTES}-byte packet limit`;
+        budgetNote.textContent = 'Short messages send more reliably.';
         setupStatus.textContent = `Current profile: ${settings.callsign || 'Ghost'} • ${window.SonicLink.getProtocolLabel(settings.protocol)}`;
     }
 
@@ -46,13 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
     setupForm.addEventListener('submit', (event) => {
         event.preventDefault();
         persist();
-        setupStatus.textContent = 'Setup saved. Opening chat...';
+        setupStatus.textContent = 'Opening chat...';
         window.location.href = 'chat.html';
     });
 
     resetBtn.addEventListener('click', () => {
         applySettings(window.SonicLink.defaultSettings());
         persist();
-        setupStatus.textContent = 'Setup reset to defaults.';
+        setupStatus.textContent = 'Settings reset.';
     });
 });

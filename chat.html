@@ -13,14 +13,14 @@
     <script src="shared.app.js" defer></script>
     <script src="chat.app.js" defer></script>
 </head>
-<body class="simple-body">
+<body class="simple-body chat-screen">
     <main class="chat-page">
         <header class="chat-topbar">
-            <div>
+            <div class="chat-brand">
                 <p class="mini-label">Sonic Link</p>
-                <h1 class="chat-title">Chat</h1>
+                <h1 class="chat-title">Channel</h1>
             </div>
-            <a href="index.html" class="secondary-btn link-btn">Back</a>
+            <a href="index.html" class="secondary-btn link-btn">Settings</a>
         </header>
 
         <section class="chat-info-row">
@@ -33,11 +33,11 @@
                 <strong id="protocolBadge">Audible Fast</strong>
             </div>
             <div class="info-pill">
-                <span class="info-key">Size</span>
+                <span class="info-key">Draft</span>
                 <strong id="byteMeter">0 / 140 bytes</strong>
             </div>
             <div class="info-pill" id="modeBadge">
-                Open Chat
+                Live Channel
             </div>
         </section>
 
@@ -45,15 +45,15 @@
             <aside class="chat-side">
                 <div class="simple-card side-card">
                     <div class="side-actions">
-                        <button id="rxBtn" class="primary-btn">Start Listening</button>
-                        <button id="clearBtn" class="secondary-btn">Clear</button>
+                        <button id="rxBtn" class="primary-btn">Enable Receiver</button>
+                        <button id="clearBtn" class="secondary-btn">Clear Chat</button>
                     </div>
-                    <p id="receiverHint" class="simple-status">Allow mic access, then start listening.</p>
+                    <p id="receiverHint" class="simple-status">Receiver idle.</p>
                 </div>
 
                 <div class="simple-card side-card">
                     <div class="canvas-head">
-                        <span class="simple-label">Signal</span>
+                        <span class="simple-label">Signal Scope</span>
                         <span id="hzDisplay" class="tiny-pill">0Hz - 24.0kHz</span>
                     </div>
                     <canvas id="visualizer" class="simple-visualizer"></canvas>
@@ -68,15 +68,15 @@
 
                 <div id="chatFeed" class="simple-chat-feed">
                     <div id="emptyState" class="simple-empty">
-                        No messages yet. Start listening on one device and send from the other.
+                        No messages yet.
                     </div>
                 </div>
 
                 <div class="simple-composer">
                     <textarea id="composeInput" class="simple-input simple-textarea" maxlength="120" placeholder="Type a short message..."></textarea>
                     <div class="simple-compose-row">
-                        <p id="composeHint" class="simple-status">Press Enter to send. Keep messages short for better delivery.</p>
-                        <button id="txBtn" class="primary-btn">Send</button>
+                        <p id="composeHint" class="simple-status">Press Enter to transmit.</p>
+                        <button id="txBtn" class="primary-btn">Transmit</button>
                     </div>
                 </div>
             </section>
