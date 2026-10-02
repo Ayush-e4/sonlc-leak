@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         row.className = `message-row ${direction}`;
 
         const bubble = document.createElement('article');
-        bubble.className = `bubble ${direction === 'outgoing' ? 'bubble-self' : message.locked ? 'bubble-locked' : ''}`;
+        bubble.className = `bubble ${direction === 'outgoing' ? 'bubble-self' : ''}`;
 
         const meta = document.createElement('div');
         meta.className = 'bubble-meta';
@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result && result.length > 0) {
                 const decoded = new TextDecoder('utf-8').decode(result);
-                const message = window.SonicLink.unpackMessage(decoded, settings);
+                const message = window.SonicLink.unpackMessage(decoded);
 
                 if (!markPacketSeen(message.signature)) {
                     renderMessage(message, 'incoming');
@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const preview = window.SonicLink.unpackMessage(packed.payload, settings);
+            const preview = window.SonicLink.unpackMessage(packed.payload);
             renderMessage(preview, 'outgoing');
 
             if (isListening) {

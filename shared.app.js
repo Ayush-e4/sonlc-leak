@@ -112,27 +112,23 @@
 
         return {
             payload,
-            bytes: packetByteLength(payload),
-            modeLabel: 'Open',
-            nonce
+            bytes: packetByteLength(payload)
         };
     }
 
-    function unpackMessage(payload, settings) {
+    function unpackMessage(payload) {
         const parts = String(payload || '').split('|');
 
         if (parts.length < 4 || parts[0] !== 'p') {
             return {
                 from: 'Open Signal',
                 text: payload,
-                locked: false,
                 modeLabel: 'Raw',
                 signature: payload,
                 ts: Date.now()
             };
         }
 
-        const mode = parts[0];
         const rawFrom = parts[1];
         const nonce = parts[2];
         const body = parts.slice(3).join('|');
@@ -141,7 +137,6 @@
         return {
             from,
             text: safeDecodeURIComponent(body),
-            locked: false,
             modeLabel: 'Open',
             signature: `${nonce}:${rawFrom}`,
             ts: Date.now()
@@ -156,7 +151,6 @@
         hasSavedSettings,
         getProtocolLabel,
         formatTime,
-        packetByteLength,
         packMessage,
         unpackMessage
     };
